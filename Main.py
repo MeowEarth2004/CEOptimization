@@ -5,7 +5,7 @@ import threading
 import pandas as pd
 import paho.mqtt.client as mqtt
 from flask import Flask, render_template, session, redirect, url_for, request, jsonify
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO #fvdvddvd
 from ai_predictor import predict_energy_trend  # โมเดล AI อยากได้แบบอื่นค่อยเปลี่ยน
 
 # ===== CONFIG =====
