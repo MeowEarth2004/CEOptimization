@@ -4,68 +4,154 @@
 <head>
   <meta charset="UTF-8">
   <title>IoT Energy Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 📊 Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- 🔌 Socket.IO -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+  <!-- 💅 Tailwind CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
 </head>
 
 <body class="bg-gray-900 text-white font-sans">
 
-  <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold text-center mb-6">🔋 IoT Energy Dashboard</h1>
-  <div class="mt-6 text-center">
-  <h2 class="text-lg mb-2">Switch Power Source</h2>
-  <button onclick="switchPower('use_grid')" class="bg-blue-500 px-4 py-2 rounded m-2">Grid</button>
-  <button onclick="switchPower('use_battery')" class="bg-yellow-500 px-4 py-2 rounded m-2">Battery</button>
-  <button onclick="switchPower('use_solar')" class="bg-green-500 px-4 py-2 rounded m-2 shadow mb-6">Solar</button>
-</div>
+  <!-- 🔹 แถบเมนู -->
+  <div class="tabs flex justify-around mb-4 bg-gray-800 py-3 shadow">
+    <button class="tab-button" data-tab="dashboard">Dashboard</button>
+    <button class="tab-button" data-tab="control">Control</button>
+    <button class="tab-button" data-tab="history">History</button>
+    <button class="tab-button" data-tab="settings">Settings</button>
+  </div>
 
-<script>
-const socket = io(window.location.origin);
-socket.on('sensor_data', (msg) => {
-  document.getElementById('data').textContent = msg.value;
-});  
-function switchPower(cmd) {
-  fetch('/control/' + cmd)
-    .then(res => res.json())
-    .then(data => alert(data.status));
-    
-}
-</script>  
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-      <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
-        <h2 class="text-lg">Voltage</h2>
-        <p id="voltage" class="text-3xl font-bold">--</p>
-      </div>
-      <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
-        <h2 class="text-lg">Current</h2>
-        <p id="current" class="text-3xl font-bold">--</p>
-      </div>
-      <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
-        <h2 class="text-lg">Power</h2>
-        <p id="power" class="text-3xl font-bold">--</p>
-      </div>
-    </div>
+  <!-- 📌 Dashboard -->
+  <div id="dashboard" class="tab-content">
+    <div class="container mx-auto p-6">
+      <h1 class="text-3xl font-bold text-center mb-6">🔋 IoT Energy Dashboard</h1>
 
-    <div class="bg-gray-800 p-4 rounded-2xl shadow mb-6">
-      <h2 class="text-lg mb-2">Power Usage Trend</h2>
-      <p id="trend" class="text-xl font-semibold text-green-400">Collecting data...</p>
-    </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
+          <h2 class="text-lg">Voltage</h2>
+          <p id="voltage" class="text-3xl font-bold">--</p>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
+          <h2 class="text-lg">Current</h2>
+          <p id="current" class="text-3xl font-bold">--</p>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
+          <h2 class="text-lg">Power</h2>
+          <p id="power" class="text-3xl font-bold">--</p>
+        </div>
+      </div>
 
-    <div class="bg-gray-800 p-4 rounded-2x1 shadow">
-      <h2 class="text-lg mb-2">Power & Time</h2>
-      <canvas id="powerChart" height="100"></canvas>
+      <div class="bg-gray-800 p-4 rounded-2xl shadow mb-6">
+        <h2 class="text-lg mb-2">Power Usage Trend</h2>
+        <p id="trend" class="text-xl font-semibold text-green-400">Collecting data...</p>
+      </div>
+
+      <div class="bg-gray-800 p-4 rounded-2xl shadow mb-6">
+        <h2 class="text-lg mb-2">Power & Time</h2>
+        <canvas id="powerChart" height="100"></canvas>
+      </div>
     </div>
   </div>
-  <div class="text-center">
+
+  <!-- ⚙️ Control -->
+  <div id="control" class="tab-content hidden">
+    <div class="mt-6 text-center">
+      <h2 class="text-lg mb-2">Switch Power Source</h2>
+      <button onclick="switchPower('use_grid')" class="bg-blue-500 px-4 py-2 rounded m-2">Grid</button>
+      <button onclick="switchPower('use_battery')" class="bg-yellow-500 px-4 py-2 rounded m-2">Battery</button>
+      <button onclick="switchPower('use_solar')" class="bg-green-500 px-4 py-2 rounded m-2 shadow mb-6">Solar</button>
+    </div>
+  </div>
+
+  <!-- 🕒 History -->
+  <div id="history" class="tab-content hidden">
+    <div class="container mx-auto p-6 text-center">
+      <h2 class="text-xl font-bold mb-4">History (Coming Soon)</h2>
+      <p class="text-gray-400">บันทึกข้อมูลย้อนหลังจะมาเร็ว ๆ นี้</p>
+    </div>
+  </div>
+
+  <!-- 🔧 Settings -->
+  <div id="settings" class="tab-content hidden">
+    <div class="container mx-auto p-6 text-center">
+      <h2 class="text-xl font-bold mb-4">Settings</h2>
+      <p class="text-gray-400">ปรับแต่งการทำงานของระบบได้ที่นี่ (อยู่ระหว่างพัฒนา)</p>
+    </div>
+  </div>
+
+  <!-- 📞 Contact -->
+  <div class="text-center py-6 bg-gray-800 mt-10">
     <h2 class="text-lg mb-2">Contact Developer</h2>
-    <a href="https://lin.ee/tRmmZnr" target="_blank">LINE</a> |
-    <a href="https://www.facebook.com/profile.php?id=61581961291753" target="_blank">Facebook</a> |
-    <a href="https://discord.gg/yourdiscord" target="_blank">Discord</a> |
-    <a href="https://www.instagram.com/yourinstaid" target="_blank">Instagram</a>
-    <div class="bg-gray-800 p-4 rounded-2x1 shadow mb-2 "></div>
+    <a href="https://lin.ee/tRmmZnr" target="_blank" class="mx-2 text-blue-400">LINE</a> |
+    <a href="https://www.facebook.com/profile.php?id=61581961291753" target="_blank" class="mx-2 text-blue-400">Facebook</a> |
+    <a href="https://discord.gg/yourdiscord" target="_blank" class="mx-2 text-blue-400">Discord</a> |
+    <a href="https://www.instagram.com/yourinstaid" target="_blank" class="mx-2 text-blue-400">Instagram</a>
   </div>
 
-  <script src="/static/dashboard.js"></script>
+  <!-- 🧠 Script ส่วนควบคุม -->
+  <script>
+    // ✅ สลับแท็บ
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
+        document.getElementById(tab).classList.remove('hidden');
+      });
+    });
+
+    // ✅ Socket.IO
+    const socket = io(window.location.origin);
+
+    const voltageEl = document.getElementById("voltage");
+    const currentEl = document.getElementById("current");
+    const powerEl = document.getElementById("power");
+    const trendEl = document.getElementById("trend");
+
+    // ✅ Chart.js
+    const ctx = document.getElementById("powerChart").getContext("2d");
+    const chartData = {
+      labels: [],
+      datasets: [{
+        label: "Power (W)",
+        data: [],
+        borderColor: "#00FFAA",
+        fill: false,
+        tension: 0.2
+      }]
+    };
+    const chart = new Chart(ctx, {
+      type: "line",
+      data: chartData,
+      options: { scales: { x: { display: false } } }
+    });
+
+    // ✅ รับข้อมูลจาก server
+    socket.on("update", (msg) => {
+      const d = msg.data;
+      voltageEl.textContent = `${d.voltage.toFixed(2)} V`;
+      currentEl.textContent = `${d.current.toFixed(2)} A`;
+      powerEl.textContent = `${d.power.toFixed(2)} W`;
+      trendEl.textContent = msg.trend;
+
+      chartData.labels.push("");
+      chartData.datasets[0].data.push(d.power);
+      if (chartData.labels.length > 20) {
+        chartData.labels.shift();
+        chartData.datasets[0].data.shift();
+      }
+      chart.update();
+    });
+
+    // ✅ ปุ่มควบคุม
+    function switchPower(cmd) {
+      fetch('/control/' + cmd)
+        .then(res => res.json())
+        .then(data => alert(data.status))
+        .catch(err => alert('❌ Connection failed'));
+    }
+  </script>
 </body>
 </html>
