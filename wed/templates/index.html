@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>IoT Energy Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+</head>
+
+<body class="bg-gray-900 text-white font-sans">
+
+  <div class="container mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center mb-6">🔋 IoT Energy Dashboard</h1>
+  <div class="mt-6 text-center">
+  <h2 class="text-lg mb-2">Switch Power Source</h2>
+  <button onclick="switchPower('use_grid')" class="bg-blue-500 px-4 py-2 rounded m-2">Grid</button>
+  <button onclick="switchPower('use_battery')" class="bg-yellow-500 px-4 py-2 rounded m-2">Battery</button>
+  <button onclick="switchPower('use_solar')" class="bg-green-500 px-4 py-2 rounded m-2 shadow mb-6">Solar</button>
+</div>
+
+<script>
+const socket = io(window.location.origin);
+socket.on('sensor_data', (msg) => {
+  document.getElementById('data').textContent = msg.value;
+});  
+function switchPower(cmd) {
+  fetch('/control/' + cmd)
+    .then(res => res.json())
+    .then(data => alert(data.status));
+    
+}
+</script>  
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
+        <h2 class="text-lg">Voltage</h2>
+        <p id="voltage" class="text-3xl font-bold">--</p>
+      </div>
+      <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
+        <h2 class="text-lg">Current</h2>
+        <p id="current" class="text-3xl font-bold">--</p>
+      </div>
+      <div class="bg-gray-800 p-4 rounded-2xl text-center shadow">
+        <h2 class="text-lg">Power</h2>
+        <p id="power" class="text-3xl font-bold">--</p>
+      </div>
+    </div>
+
+    <div class="bg-gray-800 p-4 rounded-2xl shadow mb-6">
+      <h2 class="text-lg mb-2">Power Usage Trend</h2>
+      <p id="trend" class="text-xl font-semibold text-green-400">Collecting data...</p>
+    </div>
+
+    <div class="bg-gray-800 p-4 rounded-2x1 shadow">
+      <h2 class="text-lg mb-2">Power & Time</h2>
+      <canvas id="powerChart" height="100"></canvas>
+    </div>
+  </div>
+  <div class="text-center">
+    <h2 class="text-lg mb-2">Contact Developer</h2>
+    <a href="https://lin.ee/tRmmZnr" target="_blank">LINE</a> |
+    <a href="https://www.facebook.com/profile.php?id=61581961291753" target="_blank">Facebook</a> |
+    <a href="https://discord.gg/yourdiscord" target="_blank">Discord</a> |
+    <a href="https://www.instagram.com/yourinstaid" target="_blank">Instagram</a>
+    <div class="bg-gray-800 p-4 rounded-2x1 shadow mb-2 "></div>
+  </div>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>
