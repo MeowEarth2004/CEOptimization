@@ -1,7 +1,7 @@
-export const SERVER_URL = "http://192.168.51.45:5500"; // หรือ ngrok URL
-export const SOCKET_ENDPOINT = SERVER_URL;
-export const COMMANDS = {
-  GRID: "use_grid",
-  BATTERY: "use_battery",
-  SOLAR: "use_solar",
-};
+// 🔴 === แก้ไขจุดนี้ === 🔴
+// ให้นำ URL ที่ได้จาก NGROK ในขั้นตอนที่ 2 มาวางที่นี่
+// ต้องเป็น URL เต็มๆ ที่ขึ้นต้นด้วย https://
+const API_URL = "https://unjaunty-ricarda-telephonically.ngrok-free.dev"; 
+// 🔴 ================== 🔴
+export const SOCKET_URL = API_URL;
+export const CONTROL_URL = `${API_URL}/control`;
