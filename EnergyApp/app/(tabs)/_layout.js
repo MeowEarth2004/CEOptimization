@@ -23,21 +23,21 @@ export default function TabLayout() {
         headerTintColor: '#FFFFFF', // สีตัวอักษร Header
       }}>
       <Tabs.Screen
-        name="index" // ไฟล์นี้จะอยู่ที่ app/index.js
+        name="index" // คือไฟล์ app/(tabs)/index.js
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color }) => <TabBarIcon name="stats-chart" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="control" // ไฟล์นี้จะอยู่ที่ app/control.js
+        name="control" // คือไฟล์ app/(tabs)/control.js
         options={{
           title: 'Control',
           tabBarIcon: ({ color }) => <TabBarIcon name="game-controller" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="settings" // ไฟล์นี้จะอยู่ที่ app/settings.js
+        name="settings" // คือไฟล์ app/(tabs)/settings.js
         options={{
           title: 'Settings',
           tabBarIcon: ({ color }) => <TabBarIcon name="settings" color={color} />,
