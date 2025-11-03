@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
-import { CONTROL_URL } from '../constants/config'; // Import NGROK URL
+import { CONTROL_URL } from '../../constants/config'; // Import NGROK URL
 
 // --- Component ปุ่มควบคุม ---
 const ControlButton = ({ label, color, onPress }) => (
