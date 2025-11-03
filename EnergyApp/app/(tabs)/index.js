@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, Dimensions } from 'react-native';
 import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../constants/Config'; // Import NGROK URL
+import { SOCKET_URL } from 'constants/config'; // Import NGROK URL
 import { LineChart } from 'react-native-chart-kit';
 
 // --- สร้าง Component การ์ดแสดงสถานะ ---
