@@ -1,0 +1,16 @@
+# (สำคัญที่สุด) บังคับไม่ให้อัปโหลด node_modules
+node_modules/
+
+# ไฟล์ Build/Cache
+.expo/
+android/
+ios/
+dist/
+
+# ไฟล์ Config ที่ไม่จำเป็น
+.vscode/
+.env
+*.env
+
+# ไฟล์ Log
+*.log
