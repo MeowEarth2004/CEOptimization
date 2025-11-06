@@ -7,7 +7,7 @@ const char* ssid = "Chroencabletv";          // ชื่อ WiFi
 const char* password = "Charoen@88";         // รหัสผ่าน WiFi
 
 // ===== MQTT CONFIG =====
-const char* mqtt_server = "192.168.51.45";   // IP เครื่องที่รัน Python
+const char* mqtt_server = "192.168.51.152";   // IP เครื่องที่รัน Python
 const int mqtt_port = 1883;
 const char* mqtt_topic = "energy/data";      // ต้องตรงกับฝั่ง Python
 

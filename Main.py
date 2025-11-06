@@ -9,7 +9,7 @@ from flask_socketio import SocketIO #fvdvddvd
 from ai_predictor import predict_energy_trend  # โมเดล AI อยากได้แบบอื่นค่อยเปลี่ยน
 
 # ===== CONFIG =====
-BROKER_IP = "192.168.51.45"  # IP ของ MQTT Broker
+BROKER_IP = "192.168.51.152"  # IP ของ MQTT Broker
 PORT = 5500
 DATA_TOPIC = "energy/data"
 COMMAND_TOPIC = "energy/command"
