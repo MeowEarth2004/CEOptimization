@@ -2,3 +2,4 @@ const API_URL = "https://unjaunty-ricarda-telephonically.ngrok-free.dev"; // แ
 // 🔴 ================== 🔴
 export const SOCKET_URL = API_URL;
 export const CONTROL_URL = `${API_URL}/control`;
+

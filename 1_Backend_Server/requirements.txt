@@ -1,0 +1,9 @@
+paho-mqtt==1.6.1          # สำหรับเชื่อมต่อกับ MQTT Broker (เช่น Mosquitto)
+flask==3.0.3              # ถ้าทำ Dashboard / Web UI
+flask-socketio==5.3.6     # ส่งข้อมูลเรียลไทม์ไปหน้าเว็บ
+scikit-learn==1.5.2       # สำหรับโมเดล AI วิเคราะห์พลังงาน
+pandas==2.2.2             # จัดการข้อมูลตาราง
+numpy==1.26.4             # คำนวณตัวเลข
+matplotlib==3.9.2         # แสดงกราฟโหลดพลังงาน
+joblib==1.4.2             # บันทึก/โหลดโมเดล AI
+python-dotenv==1.0.1
