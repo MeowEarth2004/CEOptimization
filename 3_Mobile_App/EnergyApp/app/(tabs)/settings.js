@@ -1,6 +1,3 @@
-// File: 3_Mobile_App/EnergyApp/app/(tabs)/settings.js
-// [REVISED] - ทำให้หน้านี้แสดงค่า Config ที่กำลังใช้งาน
-
 import React from 'react';
 import { StyleSheet, Text, View, Linking, TouchableOpacity } from 'react-native';
 import { SOCKET_URL, CONTROL_URL } from '../../constants/config'; // Import ค่า Config มาแสดง

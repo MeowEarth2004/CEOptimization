@@ -1,6 +1,3 @@
-// File: 3_Mobile_App/EnergyApp/app/(tabs)/index.js
-// [REVISED] - ปรับปรุง Layout ของ Card ให้ยืดหยุ่นและสวยงามขึ้น
-
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, Dimensions, SafeAreaView } from 'react-native';
 import { io } from 'socket.io-client';
