@@ -1,8 +1,7 @@
 version: 3
-agent:
-  authtoken: 3561QNYIw3haOpQhHwNMO6Dignn_5YUP5KZegLGYv1NgC296q
+authtoken: 3561QNY1x2ha3gQHWMoeDJGNN_5YPSKzIglGyV1MgC29Gq # ค่าเดิมของคุณ
 
-  tunnels:
+tunnels:
   energy-server:
-    addr: 5500
+    addr: 5500 
     proto: http
