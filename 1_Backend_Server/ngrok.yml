@@ -1,3 +1,8 @@
 version: 3
 agent:
   authtoken: 3561QNYIw3haOpQhHwNMO6Dignn_5YUP5KZegLGYv1NgC296q
+
+  tunnels:
+  energy-server:
+    addr: 5500
+    proto: http
