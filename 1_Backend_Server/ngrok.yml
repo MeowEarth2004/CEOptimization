@@ -1,8 +1,6 @@
-version: "2"
-authtoken: 3561QNY1x2ha3gQHWMoeDJGNN_5YPSKzIglGyV1MgC29Gq
-
+version: 2
+authtoken: 35uVgFrIHvpSGClqdcdBHsdGK96_73Zie7fY3Y7mY6H4Zdffg
 tunnels:
   energy-server:
     addr: 5500
     proto: http
-    
