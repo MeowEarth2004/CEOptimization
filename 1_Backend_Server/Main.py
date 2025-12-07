@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 import eventlet
 eventlet.monkey_patch()
 
@@ -11,18 +14,15 @@ from flask import Flask, render_template, session, redirect, url_for, request, j
 from flask_socketio import SocketIO
 from ai_predictor import predict_energy_trend
 from dotenv import load_dotenv 
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # โหลดค่าจาก .env
 load_dotenv() 
 
 # ===== CONFIG =====
-# ใช้ค่า Cloud Broker ของคุณ
 BROKER_IP = "aeb3327ea07a4330abc85c0b337ebf7b.s1.eu.hivemq.cloud" 
-PORT = 8883 # Port สำหรับ SSL/TLS
-MQTT_USER = os.getenv('MQTT_USER') # ดึงจาก .env
-MQTT_PASS = os.getenv('MQTT_PASS') # ดึงจาก .env
+PORT = 8883 
+MQTT_USER = os.getenv('MQTT_USER') 
+MQTT_PASS = os.getenv('MQTT_PASS') 
 
 DATA_TOPIC = "energy/data"
 COMMAND_TOPIC = "energy/command"
@@ -50,20 +50,17 @@ def on_message(client, userdata, msg):
         payload = json.loads(msg.payload.decode())
         print(f"📡 Received: {payload}")
 
-        # เก็บข้อมูล
         data.loc[len(data)] = [
             payload.get("voltage", 0),
             payload.get("current", 0),
             payload.get("power", 0),
         ]
 
-        # AI Prediction (Mockup)
         try:
             trend = predict_energy_trend(data["power"].values)
         except:
             trend = "N/A"
 
-        # ส่งเข้าหน้าเว็บ (Dashboard)
         socketio.emit("update", {"data": payload, "trend": trend})
 
     except Exception as e:
@@ -73,11 +70,7 @@ def on_message(client, userdata, msg):
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
-
-# สำคัญ: ตั้งค่า SSL/TLS สำหรับ HiveMQ Cloud
 mqtt_client.tls_set() 
-
-# ตั้งค่า Username/Password
 mqtt_client.username_pw_set(MQTT_USER, MQTT_PASS)
 
 # เชื่อมต่อ
@@ -86,17 +79,12 @@ try:
 except Exception as e:
     print(f"❌ MQTT Connection Error: {e}")
 
-# ===== MQTT LOOP THREAD =====
-def mqtt_loop():
-    mqtt_client.loop_forever()
-
 # ===== WEB ROUTES =====
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         user = request.form.get('username')
         pw = request.form.get('password')
-        # ดึง User/Pass จาก .env
         if user == os.getenv('FLASK_USERNAME') and pw == os.getenv('FLASK_PASSWORD'):
             session['logged_in'] = True
             return redirect(url_for('index'))
@@ -116,7 +104,6 @@ def index():
 
 @app.route('/control/<cmd>')
 def control(cmd):
-    # ส่งคำสั่งกลับไปที่ ESP32 ผ่าน HiveMQ
     valid_cmds = ["use_grid", "use_battery", "use_solar"]
     if cmd in valid_cmds:
         mqtt_client.publish(COMMAND_TOPIC, cmd)
@@ -126,8 +113,8 @@ def control(cmd):
 
 # ===== MAIN =====
 if __name__ == "__main__":
-    socketio.start_background_task(mqtt_loop)
-
+    mqtt_client.loop_start()
+    
+    print("🚀 Starting Web Server on http://localhost:5500")
     # Start Flask App
     socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)
-    
