@@ -1,7 +1,6 @@
 import eventlet
 eventlet.monkey_patch()
 
-#----------------------------------------------
 import os
 import json
 import time
@@ -130,5 +129,5 @@ if __name__ == "__main__":
     mqtt_thread.start()
 
     # Start Flask App
-    socketio.run(app, host="0.0.0.0", port=5500, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)
     
