@@ -68,7 +68,7 @@ def on_message(client, userdata, msg):
         print(f"❌ Error processing message: {e}")
 
 # ===== MQTT SETUP =====
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 
