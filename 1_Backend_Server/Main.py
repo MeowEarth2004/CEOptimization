@@ -11,6 +11,8 @@ from flask import Flask, render_template, session, redirect, url_for, request, j
 from flask_socketio import SocketIO
 from ai_predictor import predict_energy_trend
 from dotenv import load_dotenv 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # โหลดค่าจาก .env
 load_dotenv() 
@@ -35,7 +37,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 data = pd.DataFrame(columns=["voltage", "current", "power"])
 
 # ===== MQTT CALLBACKS =====
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, rc, properties):
     if rc == 0:
         print("✅ Connected to HiveMQ Cloud Broker!")
         client.subscribe(DATA_TOPIC)
@@ -68,7 +70,7 @@ def on_message(client, userdata, msg):
         print(f"❌ Error processing message: {e}")
 
 # ===== MQTT SETUP =====
-mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 
