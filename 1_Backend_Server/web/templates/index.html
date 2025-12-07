@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IoT Energy Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+</head>
+
+<body class="bg-gray-900 text-white font-sans">
+
+  <div class="tabs flex justify-around mb-4 bg-gray-800 py-3 shadow">
+    <button class="tab-button font-bold text-blue-400" data-tab="dashboard">Dashboard</button>
+    <button class="tab-button hover:text-blue-300" data-tab="control">Control</button>
+    <a href="/logout" class="text-red-400 font-bold hover:text-red-300">Logout</a>
+  </div>
+
+  <div id="dashboard" class="tab-content">
+    <div class="container mx-auto p-6">
+      <h1 class="text-3xl font-bold text-center mb-6">🔋 IoT Energy Dashboard</h1>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-gray-800 p-4 rounded-2xl text-center shadow border border-gray-700">
+          <h2 class="text-lg text-gray-400">Voltage</h2>
+          <p id="voltage" class="text-3xl font-bold text-blue-400">--</p>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-2xl text-center shadow border border-gray-700">
+          <h2 class="text-lg text-gray-400">Current</h2>
+          <p id="current" class="text-3xl font-bold text-yellow-400">--</p>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-2xl text-center shadow border border-gray-700">
+          <h2 class="text-lg text-gray-400">Power</h2>
+          <p id="power" class="text-3xl font-bold text-green-400">--</p>
+        </div>
+      </div>
+
+      <div class="bg-gray-800 p-4 rounded-2xl shadow mb-6 border border-gray-700">
+        <h2 class="text-lg mb-2 text-gray-400">AI Analysis</h2>
+        <p id="trend" class="text-xl font-semibold text-white">Waiting for data...</p>
+      </div>
+
+      <div class="bg-gray-800 p-4 rounded-2xl shadow mb-6 border border-gray-700">
+        <h2 class="text-lg mb-2 text-gray-400">Real-time Power Usage</h2>
+        <canvas id="powerChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="control" class="tab-content hidden">
+    <div class="container mx-auto p-6 text-center">
+      <h2 class="text-2xl font-bold mb-6">Control Panel</h2>
+      <div class="bg-gray-800 p-8 rounded-2xl shadow inline-block border border-gray-700">
+          <h3 class="text-lg mb-4 text-gray-300">Select Power Source</h3>
+          <div class="flex flex-col space-y-3">
+              <button onclick="switchPower('use_grid')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded shadow transition">🏠 Use Grid</button>
+              <button onclick="switchPower('use_battery')" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded shadow transition">🔋 Use Battery</button>
+              <button onclick="switchPower('use_solar')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded shadow transition">☀️ Use Solar</button>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ สลับแท็บ
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
+        document.getElementById(tab).classList.remove('hidden');
+        
+        // Reset styles
+        document.querySelectorAll('.tab-button').forEach(b => {
+            b.classList.remove('text-blue-400', 'font-bold');
+            b.classList.add('hover:text-blue-300');
+        });
+        // Active style
+        btn.classList.add('text-blue-400', 'font-bold');
+        btn.classList.remove('hover:text-blue-300');
+      });
+    });
+
+    // ✅ Socket.IO Connection
+    const socket = io();
+
+    const voltageEl = document.getElementById("voltage");
+    const currentEl = document.getElementById("current");
+    const powerEl = document.getElementById("power");
+    const trendEl = document.getElementById("trend");
+
+    // ✅ Chart.js Setup
+    const ctx = document.getElementById("powerChart").getContext("2d");
+    const chartData = {
+      labels: [],
+      datasets: [{
+        label: "Power (W)",
+        data: [],
+        borderColor: "#34D399", // Green-400
+        backgroundColor: "rgba(52, 211, 153, 0.1)",
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+      }]
+    };
+    const chart = new Chart(ctx, {
+      type: "line",
+      data: chartData,
+      options: { 
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { 
+              x: { display: false },
+              y: { grid: { color: '#374151' }, ticks: { color: '#9CA3AF' } }
+          } 
+      }
+    });
+
+    // ✅ รับข้อมูลจาก server
+    socket.on("update", (msg) => {
+      const d = msg.data || {};
+      voltageEl.textContent = `${(d.voltage || 0).toFixed(2)} V`;
+      currentEl.textContent = `${(d.current || 0).toFixed(2)} A`;
+      powerEl.textContent = `${(d.power || 0).toFixed(2)} W`;
+      trendEl.textContent = msg.trend || "Analyzing...";
+
+      // Update Chart
+      const time = new Date().toLocaleTimeString();
+      chartData.labels.push(time);
+      chartData.datasets[0].data.push(d.power || 0);
+      
+      if (chartData.labels.length > 20) {
+        chartData.labels.shift();
+        chartData.datasets[0].data.shift();
+      }
+      chart.update();
+    });
+
+    // ✅ ปุ่มควบคุม
+    function switchPower(cmd) {
+      fetch('/control/' + cmd)
+        .then(res => res.json())
+        .then(data => alert('✅ Success: ' + data.status))
+        .catch(err => alert('❌ Error: Connection failed'));
+    }
+  </script>
+</body>
+</html>
