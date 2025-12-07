@@ -124,9 +124,7 @@ def control(cmd):
 
 # ===== MAIN =====
 if __name__ == "__main__":
-    # Start MQTT Thread
-    mqtt_thread = threading.Thread(target=mqtt_loop, daemon=True)
-    mqtt_thread.start()
+    socketio.start_background_task(mqtt_loop)
 
     # Start Flask App
     socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)
