@@ -15,7 +15,6 @@ from flask_socketio import SocketIO
 from ai_predictor import predict_energy_trend
 from dotenv import load_dotenv 
 
-# โหลดค่าจาก .env
 load_dotenv() 
 
 # ===== CONFIG =====
@@ -73,7 +72,6 @@ mqtt_client.on_message = on_message
 mqtt_client.tls_set() 
 mqtt_client.username_pw_set(MQTT_USER, MQTT_PASS)
 
-# เชื่อมต่อ
 try:
     mqtt_client.connect(BROKER_IP, PORT, 60)
 except Exception as e:
@@ -116,5 +114,5 @@ if __name__ == "__main__":
     mqtt_client.loop_start()
     
     print("🚀 Starting Web Server on http://localhost:5500")
-    # Start Flask App
+
     socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)

@@ -1,7 +1,6 @@
 #pragma once
 #include <Arduino.h>
 
-// ตัวอย่างจำลองค่าแรงดัน/กระแส (คุณจะต่อจริงก็ได้)
 float readVoltage() {
   return 220.0 + random(-5, 5); // จำลองแรงดัน
 }
