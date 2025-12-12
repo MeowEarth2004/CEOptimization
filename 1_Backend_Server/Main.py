@@ -1,8 +1,8 @@
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 import eventlet
 eventlet.monkey_patch()
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import os
 import json
