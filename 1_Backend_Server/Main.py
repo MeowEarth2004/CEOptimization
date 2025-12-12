@@ -1,7 +1,11 @@
+# ✅ เพิ่ม 2 บรรทัดนี้ไว้บนสุด ห้ามมีอะไรนำหน้า
+from gevent import monkey
+monkey.patch_all()
+
 import os
 import json
 import time
-import uuid # ✅ เพิ่ม library นี้
+import uuid
 import pandas as pd
 import paho.mqtt.client as mqtt
 from flask import Flask, render_template, session, redirect, url_for, request, jsonify
@@ -24,7 +28,9 @@ COMMAND_TOPIC = "energy/command"
 app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'default_secret')
 app.secret_key = SECRET_KEY
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
+# ✅ เปลี่ยนโหมดเป็น gevent (เสถียรสุดสำหรับงานนี้)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 # ===== DATA STORAGE =====
 data = pd.DataFrame(columns=["voltage", "current", "power"])
@@ -64,7 +70,6 @@ def on_message(client, userdata, msg):
 
 # ===== MQTT SETUP =====
 print("⏳ SERVER: Setting up MQTT...")
-# ✅ สร้าง ID สุ่ม : Server
 client_id = f"server-{uuid.uuid4()}"
 print(f"🆔 Client ID: {client_id}")
 
@@ -115,4 +120,4 @@ def control(cmd):
 # ===== MAIN =====
 if __name__ == "__main__":
     print("🚀 Starting Web Server on http://0.0.0.0:5500")
-    socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=5500, debug=False)
