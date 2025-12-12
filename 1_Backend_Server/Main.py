@@ -1,6 +1,3 @@
-from gevent import monkey
-monkey.patch_all()
-
 import os
 import json
 import time
@@ -28,8 +25,8 @@ app = Flask(__name__, template_folder="web/templates", static_folder="web/static
 SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'default_secret')
 app.secret_key = SECRET_KEY
 
-# ✅ เปลี่ยนโหมดเป็น gevent (เสถียรสุดสำหรับงานนี้)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+# ✅ ใช้ async_mode='threading' (ทำงานคู่กับ simple-websocket ที่เพิ่งลงไป)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # ===== DATA STORAGE =====
 data = pd.DataFrame(columns=["voltage", "current", "power"])
@@ -69,7 +66,7 @@ def on_message(client, userdata, msg):
 
 # ===== MQTT SETUP =====
 print("⏳ SERVER: Setting up MQTT...")
-client_id = f"server-{uuid.uuid4()}"
+client_id = f"server-{uuid.uuid4()}" # สร้าง ID สุ่มกันชน
 print(f"🆔 Client ID: {client_id}")
 
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
@@ -119,4 +116,5 @@ def control(cmd):
 # ===== MAIN =====
 if __name__ == "__main__":
     print("🚀 Starting Web Server on http://0.0.0.0:5500")
-    socketio.run(app, host="0.0.0.0", port=5500, debug=False)
+    # allow_unsafe_werkzeug จำเป็นสำหรับบางเครื่อง
+    socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)
