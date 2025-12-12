@@ -2,6 +2,7 @@ import os
 import json
 import time
 import random
+import uuid # ✅ เพิ่ม library นี้
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 
@@ -19,15 +20,18 @@ if not MQTT_USER or not MQTT_PASS:
     print("⚠️  Error: ไม่พบ MQTT_USER หรือ MQTT_PASS ในไฟล์ .env")
     exit()
 
-# ===== SETUP MQTT (รองรับ Paho v2.x) =====
-# ระบุ API Version ให้ชัดเจนเพื่อกัน Error
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+# ===== SETUP MQTT =====
+# ✅ สร้าง ID สุ่ม : ป้องกันการโดนเตะออกจาก Server
+client_id = f"hardware-{uuid.uuid4()}"
+print(f"🆔 Client ID: {client_id}")
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
 client.tls_set()
 client.username_pw_set(MQTT_USER, MQTT_PASS)
 
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        print("✅  Connected to HiveMQ (Hardware Simulator Ready!)")
+        print("✅  Hardware Connected! (Ready to send)")
     else:
         print(f"❌  Connection failed code: {rc}")
 
@@ -41,7 +45,7 @@ except Exception as e:
     print(f"❌ Error Connecting: {e}")
     exit()
 
-# ===== MAIN LOOP ===== (จำลองการส่งค่า)
+# ===== MAIN LOOP ===== 
 try:
     while True:
         voltage = round(random.uniform(225.0, 235.0), 2)
@@ -56,7 +60,6 @@ try:
 
         client.publish(DATA_TOPIC, json.dumps(payload))
         
-        # เพิ่มการ print เพื่อให้แน่ใจว่า code ทำงาน
         print(f"📤 Sent: {payload}")
         
         time.sleep(3)
