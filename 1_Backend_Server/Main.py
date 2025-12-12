@@ -25,8 +25,13 @@ app = Flask(__name__, template_folder="web/templates", static_folder="web/static
 SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'default_secret')
 app.secret_key = SECRET_KEY
 
-# ✅ ใช้ async_mode='threading' (ทำงานคู่กับ simple-websocket ที่เพิ่งลงไป)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# ✅ แก้ไขจุดสำคัญ: บังคับใช้ Polling เพื่อแก้ปัญหา Python 3.14 Crash
+socketio = SocketIO(app, 
+    cors_allowed_origins="*", 
+    async_mode='threading',
+    transports=['polling'], # 👈 บังคับใช้ polling
+    allow_upgrades=False    # 👈 ห้ามอัปเกรดเป็น websocket (กัน Crash)
+)
 
 # ===== DATA STORAGE =====
 data = pd.DataFrame(columns=["voltage", "current", "power"])
@@ -66,7 +71,7 @@ def on_message(client, userdata, msg):
 
 # ===== MQTT SETUP =====
 print("⏳ SERVER: Setting up MQTT...")
-client_id = f"server-{uuid.uuid4()}" # สร้าง ID สุ่มกันชน
+client_id = f"server-{uuid.uuid4()}"
 print(f"🆔 Client ID: {client_id}")
 
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)

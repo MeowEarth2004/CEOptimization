@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
-// ✅ แก้ไข: เรียกใช้ SOCKET_URL ให้ตรงกับ config.js
 import { SOCKET_URL } from "../constants/config"; 
 
 export default function useEnergyData() {
@@ -12,11 +11,11 @@ export default function useEnergyData() {
   });
 
   useEffect(() => {
-    console.log("🔌 Connecting to Socket:", SOCKET_URL); // Log ดู URL
+    console.log("🔌 Connecting to Socket:", SOCKET_URL);
 
-    // ✅ แก้ไข: ใช้ SOCKET_URL
+    // ✅ แก้ไข: บังคับใช้ polling ให้ตรงกับ Server
     const socket = io(SOCKET_URL, {
-      transports: ["websocket"], // บังคับใช้ websocket เพื่อความเสถียร
+      transports: ["polling"], // 👈 ใช้โหมดนี้ เสถียรสุดบน Py 3.14
     });
 
     socket.on("connect", () => {
@@ -24,7 +23,7 @@ export default function useEnergyData() {
     });
 
     socket.on("update", (msg) => {
-      console.log("📱 App Received Data:", msg); // Log ดูข้อมูลที่เข้า
+      console.log("📱 App Received Data:", msg);
       setData({
         voltage: msg.data?.voltage || 0,
         current: msg.data?.current || 0,
