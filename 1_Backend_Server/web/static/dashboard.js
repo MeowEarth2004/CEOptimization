@@ -1,75 +1,34 @@
-const socket = io();
-const voltageEl = document.getElementById("voltage");
-const currentEl = document.getElementById("current");
-const powerEl = document.getElementById("power");
-const trendEl = document.getElementById("trend");
-
-// --- Initial State ---
-voltageEl.textContent = "— V";
-currentEl.textContent = "— A";
-powerEl.textContent = "— W";
-trendEl.textContent = "Waiting...";
-
-// --- Tabs ---
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll('.tab-content').forEach((tc, index) => {
-    tc.style.display = index === 0 ? 'block' : 'none';
-  });
+// ✅ กำหนดให้ใช้ Polling เท่านั้น (แก้ปัญหา Error 400 บน Server Python 3.14)
+const socket = io({
+    transports: ['polling'],
+    upgrade: false
 });
 
-document.querySelectorAll('.tab-button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.tab;
-    document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
-    document.getElementById(tab).style.display = 'block';
-  });
-});
-
-// --- Chart ---
-const ctx = document.getElementById("powerChart").getContext("2d");
-const chartData = {
-  labels: [],
-  datasets: [{
-    label: "Power (W)",
-    data: [],
-    borderColor: "#00FFAA",
-    fill: false,
-    tension: 0.2
-  }]
-};
-const chart = new Chart(ctx, {
-  type: "line",
-  data: chartData,
-  options: { scales: { x: { display: false } } }
-});
-
-// --- Socket.IO ---
+// รับข้อมูลจาก Server
 socket.on("update", (msg) => {
-  const d = msg.data || {};
-  const v = Number(d.voltage) || 0;
-  const c = Number(d.current) || 0;
-  const p = Number(d.power) || 0;
+    console.log("Web Received:", msg);
+    
+    // อัปเดตตัวเลขบนหน้าเว็บ
+    if (msg.data) {
+        document.getElementById("voltage").innerText = msg.data.voltage + " V";
+        document.getElementById("current").innerText = msg.data.current + " A";
+        document.getElementById("power").innerText = msg.data.power + " W";
+    }
 
-  voltageEl.textContent = `${v.toFixed(2)} V`;
-  currentEl.textContent = `${c.toFixed(2)} A`;
-  powerEl.textContent = `${p.toFixed(2)} W`;
-  trendEl.textContent = msg.trend || "N/A";
-
-  chartData.labels.push("");
-  chartData.datasets[0].data.push(p);
-  if (chartData.labels.length > 20) {
-    chartData.labels.shift();
-    chartData.datasets[0].data.shift();
-  }
-  chart.update();
+    // อัปเดต Trend AI
+    if (msg.trend) {
+        document.getElementById("trend").innerText = msg.trend;
+    }
 });
 
-socket.on("connect_error", (err) => {
-  console.error("❌ Socket.IO error:", err);
-  trendEl.textContent = "Connection error";
+socket.on("connect", () => {
+    console.log("✅ Web Dashboard Connected!");
+    document.getElementById("status").innerText = "Connected";
+    document.getElementById("status").style.color = "green";
 });
 
 socket.on("disconnect", () => {
-  console.warn("⚠️ Disconnected from server");
-  trendEl.textContent = "Disconnected";
+    console.warn("⚠️ Web Dashboard Disconnected");
+    document.getElementById("status").innerText = "Disconnected";
+    document.getElementById("status").style.color = "red";
 });
