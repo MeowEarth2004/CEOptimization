@@ -1,28 +1,44 @@
-import { io } from 'socket.io-client';
-import { SERVER_URL } from '../constants/config'; 
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+// 🔴 ของเดิม: import { SOCKET_ENDPOINT } from "../constants/config";
+// ✅ แก้เป็น:
+import { SOCKET_URL } from "../constants/config"; 
 
-const socket = io(SERVER_URL, {
-  path: '/socket.io/',
-  
-  transports: ['websocket'], 
-  
-  reconnection: true, 
-  reconnectionAttempts: 10,
-  reconnectionDelay: 2000, 
-  timeout: 20000,
+export default function useEnergyData() {
+  const [data, setData] = useState({
+    voltage: 0,
+    current: 0,
+    power: 0,
+    trend: "Waiting...",
+  });
 
-  extraHeaders: {
-    "ngrok-skip-browser-warning": "true",
-    "User-Agent": "EnergyApp-Mobile"
-  }
-});
+  useEffect(() => {
+    // --- เชื่อม Socket.IO ---
+    // 🔴 ของเดิม: const socket = io(SOCKET_ENDPOINT);
+    // ✅ แก้เป็น:
+    const socket = io(SOCKET_URL);
 
-socket.on('connect', () => {
-    console.log("✅ Socket Connected via Ngrok!", socket.id);
-});
+    socket.on("connect", () => {
+      console.log("✅ Connected to server");
+    });
 
-socket.on('connect_error', (err) => {
-    console.log("❌ Socket Error Details:", err.message);
-});
+    socket.on("update", (msg) => {
+      // เพิ่ม log เพื่อเช็คว่าข้อมูลมาจริงไหม
+      console.log("📱 App Received:", msg); 
+      setData({
+        voltage: msg.data?.voltage || 0,
+        current: msg.data?.current || 0,
+        power: msg.data?.power || 0,
+        trend: msg.trend || "N/A",
+      });
+    });
 
-export default socket;
+    socket.on("disconnect", () => {
+      console.warn("⚠️ Disconnected from server");
+    });
+
+    return () => socket.disconnect();
+  }, []);
+
+  return data;
+}
