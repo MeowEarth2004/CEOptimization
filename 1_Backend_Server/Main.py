@@ -112,7 +112,5 @@ def control(cmd):
 # ===== MAIN =====
 if __name__ == "__main__":
     mqtt_client.loop_start()
-    
     print("🚀 Starting Web Server on http://localhost:5500")
-
     socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)
