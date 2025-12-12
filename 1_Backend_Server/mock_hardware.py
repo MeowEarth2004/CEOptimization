@@ -2,7 +2,7 @@ import os
 import json
 import time
 import random
-import uuid # ✅ เพิ่ม library นี้
+import uuid
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 
@@ -14,6 +14,7 @@ PORT = 8883
 MQTT_USER = os.getenv('MQTT_USER')
 MQTT_PASS = os.getenv('MQTT_PASS')
 DATA_TOPIC = "energy/data"
+COMMAND_TOPIC = "energy/command"  # ✅ เพิ่ม Topic สำหรับรับคำสั่ง
 
 # ===== Check User/Pass =====
 if not MQTT_USER or not MQTT_PASS:
@@ -21,7 +22,6 @@ if not MQTT_USER or not MQTT_PASS:
     exit()
 
 # ===== SETUP MQTT =====
-# ✅ สร้าง ID สุ่ม : ป้องกันการโดนเตะออกจาก Server
 client_id = f"hardware-{uuid.uuid4()}"
 print(f"🆔 Client ID: {client_id}")
 
@@ -29,13 +29,25 @@ client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
 client.tls_set()
 client.username_pw_set(MQTT_USER, MQTT_PASS)
 
+# ✅ ฟังก์ชันเมื่อต่อเน็ตติด
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        print("✅  Hardware Connected! (Ready to send)")
+        print("✅ Hardware Connected! (Ready to send & receive)")
+        # ติดหูฟังรอรับคำสั่งทันที
+        client.subscribe(COMMAND_TOPIC)
+        print(f"👂 Listening for commands on: {COMMAND_TOPIC}")
     else:
-        print(f"❌  Connection failed code: {rc}")
+        print(f"❌ Connection failed code: {rc}")
+
+# ✅ ฟังก์ชันเมื่อมีคำสั่งส่งเข้ามา
+def on_message(client, userdata, msg):
+    command = msg.payload.decode()
+    print(f"\n🔔 ! COMMAND RECEIVED ! 🔔")
+    print(f"👉 Order: {command}")
+    print("--------------------------------\n")
 
 client.on_connect = on_connect
+client.on_message = on_message # ผูกฟังก์ชันรับข้อความ
 
 print("⏳ Connecting to Broker...")
 try:
@@ -60,7 +72,7 @@ try:
 
         client.publish(DATA_TOPIC, json.dumps(payload))
         
-        print(f"📤 Sent: {payload}")
+        # print(f"📤 Sent: {payload}") # ปิดอันนี้ไว้ก่อน จะได้ไม่รกตาตอนรอดูคำสั่ง
         
         time.sleep(3)
 

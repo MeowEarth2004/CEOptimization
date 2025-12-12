@@ -1,114 +1,104 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
-import { CONTROL_URL } from '../../constants/config'; // Import NGROK URL
-
-// --- Component ปุ่มควบคุม ---
-const ControlButton = ({ label, color, onPress }) => (
-  <TouchableOpacity
-    style={[styles.button, { backgroundColor: color }]}
-    onPress={onPress}
-  >
-    <Text style={styles.buttonText}>{label}</Text>
-  </TouchableOpacity>
-);
+import { StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { ThemedText } from '@/components/themed-text';
+// ❌ ลบ ThemedView ออก เพราะไม่ได้ใช้
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { CONTROL_URL } from '../../constants/config';
 
 export default function ControlScreen() {
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('Ready');
 
-  // ฟังก์ชันยิง API ไปยัง Flask
-  const sendControlCommand = async (cmd) => {
-    if (loading) return; // กันกดย้ำๆ
-    setLoading(true);
-    setStatus(`Sending: ${cmd}...`);
-
+  // ฟังก์ชันส่งคำสั่ง
+  const sendCommand = async (command, label) => {
     try {
-      // ยิง fetch ไปยัง NGROK_URL/control/COMMAND
-      const response = await fetch(`${CONTROL_URL}/${cmd}`);
+      console.log(`Sending command: ${command}`);
+      const response = await fetch(`${CONTROL_URL}/${command}`); 
       
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+      // ✅ แก้ไข: ไม่ต้องเก็บใส่ตัวแปร result ถ้าไม่ได้ใช้ (แค่รอให้เสร็จก็พอ)
+      await response.json(); 
+      
+      if (response.ok) {
+        Alert.alert("✅ Success", `Switching to ${label}`);
+      } else {
+        Alert.alert("❌ Error", "Failed to send command");
       }
-
-      const data = await response.json();
-      setStatus(`✅ ${data.status}`);
-      Alert.alert('Success', data.status);
-
     } catch (error) {
-      console.error('Failed to send command:', error);
-      setStatus(`❌ Error: ${error.message}`);
-      Alert.alert('Error', 'Failed to send command.');
-    } finally {
-      setLoading(false);
+      console.error(error);
+      Alert.alert("⚠️ Connection Error", "Could not connect to server");
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Power Source Control</Text>
-      <Text style={styles.statusText}>{status}</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <ThemedText type="title" style={styles.header}>Energy Control</ThemedText>
+      <ThemedText style={styles.subHeader}>Select power source mode:</ThemedText>
 
-      <View style={styles.buttonContainer}>
-        <ControlButton
-          label="Switch to Grid"
-          color="#3B82F6" // Blue
-          onPress={() => sendControlCommand('use_grid')}
-        />
-        <ControlButton
-          label="Switch to Battery"
-          color="#FBBF24" // Yellow
-          onPress={() => sendControlCommand('use_battery')}
-        />
-        <ControlButton
-          label="Switch to Solar"
-          color="#10B981" // Green
-          onPress={() => sendControlCommand('use_solar')}
-        />
-      </View>
-    </View>
+      {/* ปุ่มที่ 1: ใช้ไฟบ้าน */}
+      <TouchableOpacity 
+        style={[styles.button, styles.gridBtn]} 
+        onPress={() => sendCommand('use_grid', 'Grid Power')}
+      >
+        <IconSymbol name="bolt.fill" size={40} color="white" />
+        <ThemedText type="subtitle" style={styles.btnText}>Use Grid (PEA)</ThemedText>
+      </TouchableOpacity>
+
+      {/* ปุ่มที่ 2: ใช้แบตเตอรี่ */}
+      <TouchableOpacity 
+        style={[styles.button, styles.batBtn]} 
+        onPress={() => sendCommand('use_battery', 'Battery')}
+      >
+        <IconSymbol name="battery.100" size={40} color="white" />
+        <ThemedText type="subtitle" style={styles.btnText}>Use Battery</ThemedText>
+      </TouchableOpacity>
+
+      {/* ปุ่มที่ 3: ใช้โซลาร์เซลล์ */}
+      <TouchableOpacity 
+        style={[styles.button, styles.solarBtn]} 
+        onPress={() => sendCommand('use_solar', 'Solar Energy')}
+      >
+        <IconSymbol name="sun.max.fill" size={40} color="white" />
+        <ThemedText type="subtitle" style={styles.btnText}>Use Solar</ThemedText>
+      </TouchableOpacity>
+
+    </ScrollView>
   );
 }
 
-// --- Stylesheet ---
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#111827', // Dark Blue/Gray
-    padding: 24,
-    justifyContent: 'center',
+    padding: 20,
+    paddingTop: 60,
+    alignItems: 'center',
+    gap: 20,
   },
-  title: {
-    fontSize: 24,
+  header: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 5,
   },
-  statusText: {
+  subHeader: {
     fontSize: 16,
-    color: 'gray',
-    textAlign: 'center',
-    marginBottom: 32,
-    height: 40,
-  },
-  buttonContainer: {
-    //
+    color: '#666',
+    marginBottom: 20,
   },
   button: {
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    marginBottom: 20,
+    width: '100%',
+    padding: 25,
+    borderRadius: 20,
+    flexDirection: 'row',
     alignItems: 'center',
-    elevation: 5, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    justifyContent: 'center',
+    gap: 15,
+    elevation: 5, // เงา Android
+    shadowColor: '#000', // เงา iOS
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
+  gridBtn: { backgroundColor: '#4A90E2' },   // สีฟ้า
+  batBtn: { backgroundColor: '#50E3C2' },    // สีเขียวมิ้นท์
+  solarBtn: { backgroundColor: '#F5A623' },  // สีส้ม
+  btnText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '600',
+  }
 });

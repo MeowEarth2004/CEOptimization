@@ -1,7 +1,7 @@
-// ✅ กำหนดให้ใช้ Polling เท่านั้น (แก้ปัญหา Error 400 บน Server Python 3.14)
+// ✅ แก้ไข: กำหนดให้ใช้ Polling เท่านั้น (เพื่อให้คุยกับ Server รู้เรื่อง)
 const socket = io({
-    transports: ['polling'],
-    upgrade: false
+    transports: ['polling'], // 👈 บังคับใช้ polling
+    upgrade: false           // 👈 ห้ามอัปเกรดเป็น websocket
 });
 
 // รับข้อมูลจาก Server
