@@ -1,4 +1,4 @@
-const API_URL = "http://192.168.50.45:5500"
+const API_URL = "https://unjaunty-ricarda-telephonically.ngrok-free.dev"
 //http://localhost:5500 
 // 🔴 ================== 🔴
 export const SOCKET_URL = API_URL;
