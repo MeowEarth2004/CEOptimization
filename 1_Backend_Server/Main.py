@@ -1,4 +1,3 @@
-# ✅ เพิ่ม 2 บรรทัดนี้ไว้บนสุด ห้ามมีอะไรนำหน้า
 from gevent import monkey
 monkey.patch_all()
 
