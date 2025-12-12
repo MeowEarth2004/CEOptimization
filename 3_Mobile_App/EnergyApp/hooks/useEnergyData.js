@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
-// 🔴 ของเดิม: import { SOCKET_ENDPOINT } from "../constants/config";
-// ✅ แก้เป็น:
+// ✅ แก้ไข: เรียกใช้ SOCKET_URL ให้ตรงกับ config.js
 import { SOCKET_URL } from "../constants/config"; 
 
 export default function useEnergyData() {
@@ -13,18 +12,19 @@ export default function useEnergyData() {
   });
 
   useEffect(() => {
-    // --- เชื่อม Socket.IO ---
-    // 🔴 ของเดิม: const socket = io(SOCKET_ENDPOINT);
-    // ✅ แก้เป็น:
-    const socket = io(SOCKET_URL);
+    console.log("🔌 Connecting to Socket:", SOCKET_URL); // Log ดู URL
+
+    // ✅ แก้ไข: ใช้ SOCKET_URL
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket"], // บังคับใช้ websocket เพื่อความเสถียร
+    });
 
     socket.on("connect", () => {
-      console.log("✅ Connected to server");
+      console.log("✅ App Connected to Server!");
     });
 
     socket.on("update", (msg) => {
-      // เพิ่ม log เพื่อเช็คว่าข้อมูลมาจริงไหม
-      console.log("📱 App Received:", msg); 
+      console.log("📱 App Received Data:", msg); // Log ดูข้อมูลที่เข้า
       setData({
         voltage: msg.data?.voltage || 0,
         current: msg.data?.current || 0,
@@ -34,7 +34,11 @@ export default function useEnergyData() {
     });
 
     socket.on("disconnect", () => {
-      console.warn("⚠️ Disconnected from server");
+      console.warn("⚠️ App Disconnected");
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("❌ Connection Error:", err.message);
     });
 
     return () => socket.disconnect();
