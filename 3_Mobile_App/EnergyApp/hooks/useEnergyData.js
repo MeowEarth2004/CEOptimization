@@ -3,14 +3,17 @@ import { SERVER_URL } from '../constants/config';
 
 const socket = io(SERVER_URL, {
   path: '/socket.io/',
-  transports: ['websocket'], // บังคับใช้ websocket เพื่อความชัวร์
+  
+  transports: ['websocket'], 
+  
   reconnection: true, 
   reconnectionAttempts: 10,
   reconnectionDelay: 2000, 
   timeout: 20000,
-  // 👇 เพิ่มตรงนี้: บัตรผ่านทาง Ngrok (สำคัญมาก!)
+
   extraHeaders: {
-    "ngrok-skip-browser-warning": "true"
+    "ngrok-skip-browser-warning": "true",
+    "User-Agent": "EnergyApp-Mobile"
   }
 });
 
