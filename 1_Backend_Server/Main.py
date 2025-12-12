@@ -1,13 +1,6 @@
-import eventlet
-eventlet.monkey_patch()
-
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 import os
 import json
 import time
-import threading
 import pandas as pd
 import paho.mqtt.client as mqtt
 from flask import Flask, render_template, session, redirect, url_for, request, jsonify
@@ -15,6 +8,7 @@ from flask_socketio import SocketIO
 from ai_predictor import predict_energy_trend
 from dotenv import load_dotenv 
 
+# โหลดค่าจาก .env
 load_dotenv() 
 
 # ===== CONFIG =====
@@ -30,42 +24,53 @@ COMMAND_TOPIC = "energy/command"
 app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'default_secret')
 app.secret_key = SECRET_KEY
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+# 🟢 แก้ไขจุดสำคัญ: ใช้ async_mode='threading' เพื่อแก้ปัญหา RLock/Eventlet ตีกัน
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # ===== DATA STORAGE =====
 data = pd.DataFrame(columns=["voltage", "current", "power"])
 
 # ===== MQTT CALLBACKS =====
-def on_connect(client, userdata, flags, rc, properties):
+def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        print("✅ Connected to HiveMQ Cloud Broker!")
+        print("✅ SERVER: Connected to Broker!")
+        # Subscribe ทันทีที่ต่อติด
         client.subscribe(DATA_TOPIC)
+        print(f"👂 SERVER: Subscribed to {DATA_TOPIC} (Waiting for data...)")
     else:
-        print(f"❌ Connection failed with code {rc}")
+        print(f"❌ SERVER: Connection failed with code {rc}")
 
 def on_message(client, userdata, msg):
     global data
     try:
+        # แปลงข้อมูลที่รับมา
         payload = json.loads(msg.payload.decode())
-        print(f"📡 Received: {payload}")
+        print(f"📡 SERVER RECEIVED: {payload}") 
 
+        # บันทึกข้อมูลลง DataFrame
         data.loc[len(data)] = [
             payload.get("voltage", 0),
             payload.get("current", 0),
             payload.get("power", 0),
         ]
 
+        # คำนวณ AI Trend (ถ้ามีข้อมูล)
+        trend = "N/A"
         try:
-            trend = predict_energy_trend(data["power"].values)
-        except:
-            trend = "N/A"
+            if len(data) > 0:
+                trend = predict_energy_trend(data["power"].values)
+        except Exception as e:
+            print(f"⚠️ Prediction Warning: {e}")
 
+        # ส่งข้อมูลไปยังหน้าเว็บและมือถือ (Real-time)
         socketio.emit("update", {"data": payload, "trend": trend})
 
     except Exception as e:
         print(f"❌ Error processing message: {e}")
 
 # ===== MQTT SETUP =====
+print("⏳ SERVER: Setting up MQTT...")
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
@@ -74,6 +79,7 @@ mqtt_client.username_pw_set(MQTT_USER, MQTT_PASS)
 
 try:
     mqtt_client.connect(BROKER_IP, PORT, 60)
+    mqtt_client.loop_start() # ใช้ Loop ของ Paho แยก Thread ไปเลย ไม่ตีกับ Flask
 except Exception as e:
     print(f"❌ MQTT Connection Error: {e}")
 
@@ -105,12 +111,12 @@ def control(cmd):
     valid_cmds = ["use_grid", "use_battery", "use_solar"]
     if cmd in valid_cmds:
         mqtt_client.publish(COMMAND_TOPIC, cmd)
-        print(f"📤 Sent command to ESP32: {cmd}")
+        print(f"📤 Command Sent to Device: {cmd}")
         return jsonify({"status": f"Command '{cmd}' sent"})
     return jsonify({"status": "Invalid command"}), 400
 
 # ===== MAIN =====
 if __name__ == "__main__":
-    mqtt_client.loop_start()
-    print("🚀 Starting Web Server on http://localhost:5500")
+    print("🚀 Starting Web Server on http://0.0.0.0:5500")
+    # allow_unsafe_werkzeug จำเป็นสำหรับบาง Environment
     socketio.run(app, host="0.0.0.0", port=5500, debug=False, allow_unsafe_werkzeug=True)
