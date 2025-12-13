@@ -72,7 +72,7 @@ try:
 
         client.publish(DATA_TOPIC, json.dumps(payload))
         
-        # print(f"📤 Sent: {payload}") # ปิดอันนี้ไว้ก่อน จะได้ไม่รกตาตอนรอดูคำสั่ง
+        print(f"📤 Sent: {payload}")
         
         time.sleep(3)
 
