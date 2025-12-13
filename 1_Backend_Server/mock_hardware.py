@@ -1,84 +1,61 @@
-import time
+import os
 import json
+import time
 import random
-import uuid
-import ssl
 import paho.mqtt.client as mqtt
 
-# ===== CONFIG =====
-BROKER = "aeb3327ea07a4330abc85c0b337ebf7b.s1.eu.hivemq.cloud"
-PORT = 8884
+# ===== CONFIG (HARDCODED) =====
+# ใส่รหัสตรงๆ เพื่อความชัวร์ 100%
+BROKER_IP = "aeb3327ea07a4330abc85c0b337ebf7b.s1.eu.hivemq.cloud"
+PORT = 8883
 MQTT_USER = "CEOptimization.admin2004"
-MQTT_PASS = "Admin1234" # 👈 ต้องตรงกับในเว็บ HiveMQ เป๊ะๆ
+MQTT_PASS = "CEO.admin2004"
 DATA_TOPIC = "energy/data"
 
-# ===== SETUP =====
-client_id = f"hardware-{uuid.uuid4().hex[:6]}"
-print(f"🆔 Client ID: {client_id}")
-
-# ใช้ Version 2 เพื่อแก้ Warning สีแดง
-client = mqtt.Client(client_id=client_id, transport='websockets', protocol=mqtt.MQTTv311, callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
-client.ws_set_options(path="/mqtt")
-client.tls_set(tls_version=ssl.PROTOCOL_TLSv1_2)
+# ===== SETUP MQTT =====
+# ใช้ Callback API Version 2 เพื่อรองรับ Library ใหม่ๆ
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.tls_set()
 client.username_pw_set(MQTT_USER, MQTT_PASS)
 
-# ตัวแปรเช็คสถานะ
-is_connected = False
-
-def on_connect(client, userdata, flags, rc, properties=None):
-    global is_connected
+def on_connect(client, userdata, flags, rc, properties):
     if rc == 0:
-        is_connected = True
-        print("✅ Hardware Connected! (เชื่อมต่อสำเร็จ)")
-    elif rc == 5:
-        print("❌ รหัสผ่านผิด! (Code 5) กรุณาเช็คใน HiveMQ Dashboard")
+        print("✅  Connected to HiveMQ (Hardware Simulator Ready!)")
     else:
-        print(f"❌ เชื่อมต่อไม่ได้ Code: {rc}")
-
-def on_disconnect(client, userdata, flags, rc, properties=None):
-    global is_connected
-    is_connected = False
-    print("⚠️ หลุดการเชื่อมต่อ (Disconnected)")
+        # rc จะแสดงเป็นข้อความ Error โดยตรงในเวอร์ชันใหม่
+        print(f"❌  Connection failed: {rc}")
 
 client.on_connect = on_connect
-client.on_disconnect = on_disconnect
 
-print("⏳ Connecting to HiveMQ...")
+print(f"⏳ Connecting to {BROKER_IP}...")
 try:
-    client.connect(BROKER, PORT, 60)
+    client.connect(BROKER_IP, PORT, 60)
     client.loop_start()
-except Exception as e:
-    print(f"❌ Error: {e}")
 
-# ===== LOOP =====
-try:
+    # ===== MAIN LOOP =====
     while True:
-        if is_connected:
-            # สุ่มเลข
-            voltage = round(random.uniform(220.0, 240.0), 2)
-            current = round(random.uniform(1.0, 5.0), 2)
-            power = round(voltage * current, 2)
-            
-            # AI Logic
-            trend = "Normal ✅"
-            if power > 1000: trend = "Overload ⚠️"
-            elif power > 800: trend = "Peak Usage 📈"
-            elif power < 300: trend = "Eco Mode 🌱"
+        # จำลองค่า Voltage (225-235V)
+        voltage = round(random.uniform(225.0, 235.0), 2)
+        # จำลองค่า Current (1.5-5.0A)
+        current = round(random.uniform(1.5, 5.0), 2)
+        # คำนวณ Power
+        power = round(voltage * current, 2)
 
-            payload = {
-                "voltage": voltage,
-                "current": current,
-                "power": power,
-                "trend": trend
-            }
-            
-            client.publish(DATA_TOPIC, json.dumps(payload))
-            print(f"📤 Sent: {power}W | Trend: {trend}")
-        else:
-            print("⏳ รอการเชื่อมต่อ... (Waiting for connection)")
+        payload = {
+            "voltage": voltage,
+            "current": current,
+            "power": power
+        }
+
+        client.publish(DATA_TOPIC, json.dumps(payload))
         
-        time.sleep(2)
+        print(f"📤 Sent: {payload}")
+        
+        time.sleep(3) # ส่งทุก 3 วินาที
 
 except KeyboardInterrupt:
-    print("Stopping...")
+    print("\n🛑 Stopping simulator...")
     client.loop_stop()
+    client.disconnect()
+except Exception as e:
+    print(f"\n❌ Error: {e}")
