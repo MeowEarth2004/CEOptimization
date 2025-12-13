@@ -42,9 +42,9 @@ def on_connect(client, userdata, flags, rc, properties=None):
 # ✅ ฟังก์ชันเมื่อมีคำสั่งส่งเข้ามา
 def on_message(client, userdata, msg):
     command = msg.payload.decode()
-    print(f"\n🔔 ! COMMAND RECEIVED ! 🔔")
-    print(f"👉 Order: {command}")
-    print("--------------------------------\n")
+    print("\n" + "="*40)
+    print(f"🚀  COMMAND RECEIVED: {command}")
+    print("="*40 + "\n")
 
 client.on_connect = on_connect
 client.on_message = on_message # ผูกฟังก์ชันรับข้อความ
