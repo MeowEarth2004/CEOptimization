@@ -1,8 +1,7 @@
 import { StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
-// ❌ ลบ ThemedView ออก เพราะไม่ได้ใช้
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { CONTROL_URL } from '../../constants/config';
+import { CONTROL_URL } from '../../constants/config'; // เรียกใช้ URL จาก config กลาง
 
 export default function ControlScreen() {
 
@@ -12,7 +11,6 @@ export default function ControlScreen() {
       console.log(`Sending command: ${command}`);
       const response = await fetch(`${CONTROL_URL}/${command}`); 
       
-      // ✅ แก้ไข: ไม่ต้องเก็บใส่ตัวแปร result ถ้าไม่ได้ใช้ (แค่รอให้เสร็จก็พอ)
       await response.json(); 
       
       if (response.ok) {

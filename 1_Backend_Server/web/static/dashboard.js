@@ -1,96 +1,124 @@
-// dashboard.js - Updated for History Graph
-const socket = io();
+const socket = io(); // เชื่อมต่อไปที่ Main.py
 
-// ตั้งค่ากราฟ Chart.js
-const ctx = document.getElementById('energyChart').getContext('2d');
-const energyChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [], // เวลา
-        datasets: [{
-            label: 'Power (W)',
-            data: [],
-            borderColor: '#00d2ff', // สีฟ้า Neon
-            backgroundColor: 'rgba(0, 210, 255, 0.2)',
-            borderWidth: 2,
-            tension: 0.4, // เส้นโค้งสมูท
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: true, labels: { color: 'white' } }
-        },
-        scales: {
-            x: { 
-                ticks: { color: '#aaa' },
-                grid: { color: '#333' }
-            },
-            y: { 
-                beginAtZero: true,
-                ticks: { color: '#aaa' },
-                grid: { color: '#333' } 
-            }
-        }
-    }
+// Element References
+const voltageEl = document.getElementById("voltage");
+const currentEl = document.getElementById("current");
+const powerEl = document.getElementById("power");
+const trendEl = document.getElementById("trend");
+
+// --- Initial State ---
+voltageEl.textContent = "— V";
+currentEl.textContent = "— A";
+powerEl.textContent = "— W";
+trendEl.textContent = "Waiting for data...";
+
+// --- Tabs Logic ---
+document.addEventListener("DOMContentLoaded", () => {
+  const tabs = document.querySelectorAll('.tab-content');
+  if(tabs.length > 0) {
+      tabs.forEach((tc, index) => {
+        tc.style.display = index === 0 ? 'block' : 'none';
+      });
+  }
 });
 
-// ฟังก์ชันโหลดข้อมูลย้อนหลังจาก Database
-async function loadHistory() {
-    try {
-        const response = await fetch('/api/history');
-        const historyData = await response.json();
-        
-        // เคลียร์กราฟเก่า
-        energyChart.data.labels = [];
-        energyChart.data.datasets[0].data = [];
-
-        // ใส่ข้อมูลย้อนหลัง (reverse เพราะ SQL ดึงมาแบบ ล่าสุด->เก่า)
-        historyData.reverse().forEach(item => {
-            const timeLabel = new Date(item.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
-            energyChart.data.labels.push(timeLabel);
-            energyChart.data.datasets[0].data.push(item.power);
-        });
-        energyChart.update();
-        console.log("✅ Loaded history data:", historyData.length, "points");
-    } catch (err) {
-        console.error("❌ Failed to load history:", err);
-    }
-}
-
-// โหลดประวัติทันทีที่เปิดเว็บ
-loadHistory();
-
-// รับค่า Real-time จาก SocketIO
-socket.on('update', (msg) => {
-    // 1. อัปเดตตัวเลข
-    document.getElementById('voltage').innerText = msg.data.voltage.toFixed(2);
-    document.getElementById('current').innerText = msg.data.current.toFixed(2);
-    document.getElementById('power').innerText = msg.data.power.toFixed(2);
-    document.getElementById('trend').innerText = msg.trend;
-
-    // 2. อัปเดตกราฟ (เลื่อนข้อมูลไปทางซ้าย)
-    const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
-    
-    // เพิ่มข้อมูลใหม่
-    energyChart.data.labels.push(now);
-    energyChart.data.datasets[0].data.push(msg.data.power);
-
-    // ถ้าข้อมูลเกิน 50 จุด ให้ลบจุดแรกออก (กราฟจะได้ไม่แน่นเกิน)
-    if (energyChart.data.labels.length > 50) {
-        energyChart.data.labels.shift();
-        energyChart.data.datasets[0].data.shift();
-    }
-    
-    energyChart.update();
+document.querySelectorAll('.tab-button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+    const target = document.getElementById(tab);
+    if (target) target.style.display = 'block';
+  });
 });
 
-// ฟังก์ชันปุ่มควบคุม
-function sendCommand(cmd) {
-    fetch(`/control/${cmd}`)
-        .then(res => res.json())
-        .then(data => alert(`✅ ${data.status}`))
-        .catch(err => alert(`❌ Error: ${err}`));
+// --- Chart Setup ---
+const ctxEl = document.getElementById("powerChart");
+let chart;
+
+if (ctxEl) {
+    const ctx = ctxEl.getContext("2d");
+    const chartData = {
+      labels: Array(20).fill(""), // สร้าง label ว่างๆ ไว้ก่อน 20 ช่อง
+      datasets: [{
+        label: "Power (W)",
+        data: Array(20).fill(0), // สร้าง data 0 ไว้ก่อน
+        borderColor: "#00FFAA",
+        backgroundColor: "rgba(0, 255, 170, 0.1)",
+        fill: true,
+        tension: 0.4, // เส้นโค้งสมูท
+        pointRadius: 2
+      }]
+    };
+    
+    chart = new Chart(ctx, {
+      type: "line",
+      data: chartData,
+      options: { 
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 0 }, // ปิด Animation เพื่อประสิทธิภาพตอนอัปเดตเร็วๆ
+          scales: { 
+              x: { display: false },
+              y: { 
+                  beginAtZero: true,
+                  grid: { color: "#333" }
+              } 
+          },
+          plugins: {
+              legend: { labels: { color: 'white' } }
+          }
+      }
+    });
 }
+
+// --- Socket.IO Handling ---
+
+socket.on("connect", () => {
+    console.log("✅ Connected to Backend Server");
+    trendEl.textContent = "Connected";
+    trendEl.style.color = "#00FFAA";
+});
+
+socket.on("update", (msg) => {
+  console.log("📥 Data received:", msg); // ดู Log ใน Browser Console (F12)
+
+  const d = msg.data || {};
+  // แปลงค่าเป็น Float เพื่อความชัวร์
+  const v = parseFloat(d.voltage).toFixed(2);
+  const c = parseFloat(d.current).toFixed(2);
+  const p = parseFloat(d.power).toFixed(2);
+
+  // อัปเดตตัวเลข
+  if(voltageEl) voltageEl.textContent = `${v} V`;
+  if(currentEl) currentEl.textContent = `${c} A`;
+  if(powerEl) powerEl.textContent = `${p} W`;
+  if(trendEl) {
+      trendEl.textContent = msg.trend || "N/A";
+      trendEl.style.color = msg.trend.includes("⚠️") ? "orange" : "#00FFAA";
+  }
+
+  // อัปเดตตารางกราฟ
+  if (chart) {
+    chart.data.labels.push(new Date().toLocaleTimeString()); // ใส่เวลาปัจจุบันลงไปในแกน X
+    chart.data.datasets[0].data.push(parseFloat(p));
+
+    // ลบข้อมูลเก่าออกถ้าเกิน 20 จุด
+    if (chart.data.labels.length > 20) {
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+    }
+    chart.update();
+  }
+});
+
+socket.on("connect_error", (err) => {
+  console.error("❌ Socket.IO error:", err);
+  trendEl.textContent = "Connection Error";
+  trendEl.style.color = "red";
+});
+
+socket.on("disconnect", () => {
+  console.warn("⚠️ Disconnected from server");
+  trendEl.textContent = "Disconnected";
+  trendEl.style.color = "red";
+});
