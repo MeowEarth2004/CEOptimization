@@ -48,24 +48,24 @@ def on_connect(client, userdata, flags, rc, properties=None):
 def on_message(client, userdata, msg):
     global data
     try:
+        # 1. รับข้อมูล
         payload = json.loads(msg.payload.decode())
         print(f"📡 SERVER RECEIVED: {payload}") 
 
+        # 2. บันทึกข้อมูล
         data.loc[len(data)] = [
             payload.get("voltage", 0),
             payload.get("current", 0),
             payload.get("power", 0),
         ]
-
-        trend = "N/A"
-        try:
-            if len(data) > 0:
-                trend = predict_energy_trend(data["power"].values)
-        except Exception as e:
-            print(f"⚠️ Prediction Warning: {e}")
-
-        socketio.emit("update", {"data": payload, "trend": trend})
-
+        
+        # 3. (สำคัญ) ส่งต่อไปยังแอป!
+        # ต้องมีบรรทัด socketio.emit ตรงนี้ครับ
+        trend = "N/A" # (โค้ด AI ย่อไว้)
+        
+        # 👇 บรรทัดนี้สำคัญที่สุด! ถ้าไม่มี แอปจะไม่ได้รับข้อมูล
+        socketio.emit("update", {"data": payload, "trend": trend}) 
+        
     except Exception as e:
         print(f"❌ Error processing message: {e}")
 
