@@ -13,15 +13,10 @@ BROKER_IP = "aeb3327ea07a4330abc85c0b337ebf7b.s1.eu.hivemq.cloud"
 PORT = 8883
 MQTT_USER = os.getenv('MQTT_USER')
 MQTT_PASS = os.getenv('MQTT_PASS')
-DATA_TOPIC = "energy/data"
-COMMAND_TOPIC = "energy/command"  # ✅ เพิ่ม Topic สำหรับรับคำสั่ง
+DATA_TOPIC = "energy/data"     # 👈 เช็คคำนี้ต้องตรงกับ Main.py เป๊ะๆ
+COMMAND_TOPIC = "energy/command"
 
-# ===== Check User/Pass =====
-if not MQTT_USER or not MQTT_PASS:
-    print("⚠️  Error: ไม่พบ MQTT_USER หรือ MQTT_PASS ในไฟล์ .env")
-    exit()
-
-# ===== SETUP MQTT =====
+# ===== SETUP =====
 client_id = f"hardware-{uuid.uuid4()}"
 print(f"🆔 Client ID: {client_id}")
 
@@ -29,25 +24,25 @@ client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
 client.tls_set()
 client.username_pw_set(MQTT_USER, MQTT_PASS)
 
-# ✅ ฟังก์ชันเมื่อต่อเน็ตติด
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        print("✅ Hardware Connected! (Ready to send & receive)")
-        # ติดหูฟังรอรับคำสั่งทันที
+        print("✅ Hardware Connected! (Stable)")
         client.subscribe(COMMAND_TOPIC)
-        print(f"👂 Listening for commands on: {COMMAND_TOPIC}")
     else:
         print(f"❌ Connection failed code: {rc}")
 
-# ✅ ฟังก์ชันเมื่อมีคำสั่งส่งเข้ามา
+# ✅ เพิ่มตัวเช็ค: ทำไมถึงหลุด?
+def on_disconnect(client, userdata, flags, rc, properties=None):
+    print(f"⚠️ DISCONNECTED! Code: {rc}")
+    if rc != 0:
+        print("   👉 (Server/Network kicked us out)")
+
 def on_message(client, userdata, msg):
-    command = msg.payload.decode()
-    print("\n" + "="*40)
-    print(f"🚀  COMMAND RECEIVED: {command}")
-    print("="*40 + "\n")
+    print(f"\n🔔 COMMAND: {msg.payload.decode()}\n")
 
 client.on_connect = on_connect
-client.on_message = on_message # ผูกฟังก์ชันรับข้อความ
+client.on_disconnect = on_disconnect # ผูกฟังก์ชัน
+client.on_message = on_message
 
 print("⏳ Connecting to Broker...")
 try:
@@ -60,21 +55,17 @@ except Exception as e:
 # ===== MAIN LOOP ===== 
 try:
     while True:
-        voltage = round(random.uniform(225.0, 235.0), 2)
-        current = round(random.uniform(1.5, 5.0), 2)
-        power = round(voltage * current, 2)
-
         payload = {
-            "voltage": voltage,
-            "current": current,
-            "power": power
+            "voltage": round(random.uniform(225.0, 235.0), 2),
+            "current": round(random.uniform(1.5, 5.0), 2),
+            "power": 0 
         }
+        payload["power"] = round(payload["voltage"] * payload["current"], 2)
 
         client.publish(DATA_TOPIC, json.dumps(payload))
-        
         print(f"📤 Sent: {payload}")
         
-        time.sleep(3)
+        time.sleep(3) # ส่งทุก 3 วินาที
 
 except KeyboardInterrupt:
     print("\n🛑 Stopping simulator...")
