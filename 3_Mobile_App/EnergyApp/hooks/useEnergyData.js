@@ -1,58 +1,80 @@
 import { useState, useEffect } from 'react';
-import mqtt from 'precompiled-mqtt';
+import Paho from 'paho-mqtt';
 
-// ตั้งค่า Link แบบเต็ม (ใส่ wss:// และ /mqtt ให้ครบ)
-const MQTT_URL = 'wss://aeb3327ea07a4330abc85c0b337ebf7b.s1.eu.hivemq.cloud:8884/mqtt';
-const MQTT_USER = 'CEOptimization.admin2004';
-const MQTT_PASS = 'Admin1234';
+// 🛠️ 1. แก้บั๊ก Paho (หลอกว่ามี localStorage)
+if (!global.localStorage) {
+  global.localStorage = {
+    getItem: () => null,
+    setItem: () => null,
+    removeItem: () => null,
+  };
+}
+
+// ตั้งค่า HiveMQ
+const BROKER_HOST = "aeb3327ea07a4330abc85c0b337ebf7b.s1.eu.hivemq.cloud";
+const BROKER_PORT = 8884;
+const MQTT_USER = "CEOptimization.admin2004";
+const MQTT_PASS = "Admin1234";
 
 export default function useEnergyData() {
   const [data, setData] = useState({ 
     voltage: 0, 
     current: 0, 
     power: 0, 
-    trend: 'Waiting for Signal...' // เปลี่ยนคำพูดให้เรารู้สถานะ
+    // ใช้ตรงนี้โชว์สถานะการเชื่อมต่อแทน AI ชั่วคราว จะได้รู้ว่าติดตรงไหน
+    trend: 'Connecting...' 
   });
 
   useEffect(() => {
     console.log("🔌 App Connecting...");
+    setData(prev => ({ ...prev, trend: 'Initiating...' }));
     
-    const client = mqtt.connect(MQTT_URL, {
-      username: MQTT_USER,
-      password: MQTT_PASS,
-      clientId: `app-user-${Math.random().toString(16).slice(2)}`,
-      reconnectPeriod: 1000, // ถ้าหลุดให้รีบต่อใหม่ใน 1 วิ
-    });
+    const clientID = `app-${Math.random().toString(16).slice(2)}`;
+    const client = new Paho.Client(BROKER_HOST, BROKER_PORT, "/mqtt", clientID);
 
-    client.on('connect', () => {
-      console.log('✅ App Connected to Cloud!');
-      client.subscribe('energy/data', (err) => {
-        if (!err) {
-            console.log("📡 Subscribed to energy/data");
-        }
-      });
-    });
+    client.onConnectionLost = (responseObject) => {
+      console.log("❌ Lost:", responseObject.errorMessage);
+      setData(prev => ({ ...prev, trend: `Lost: ${responseObject.errorMessage}` }));
+    };
 
-    client.on('message', (topic, message) => {
+    client.onMessageArrived = (message) => {
       try {
-        const parsed = JSON.parse(message.toString());
-        console.log("📩 Data received:", parsed); // เช็คว่าข้อมูลเข้าไหม
+        const parsed = JSON.parse(message.payloadString);
         setData({
           voltage: parsed.voltage || 0,
           current: parsed.current || 0,
           power: parsed.power || 0,
-          trend: parsed.trend || 'Normal ✅'
+          trend: parsed.trend || 'Normal ✅' // ถ้าข้อมูลมา trend จะเปลี่ยนตามจริง
         });
       } catch (err) {
-        console.error('❌ Data Error:', err);
+        console.error("❌ Parse Error:", err);
       }
-    });
+    };
 
-    client.on('error', (err) => {
-      console.error('❌ Connection Error:', err);
-    });
+    // เชื่อมต่อ
+    try {
+        client.connect({
+          useSSL: true, 
+          userName: MQTT_USER,
+          password: MQTT_PASS,
+          onSuccess: () => {
+            console.log("✅ Connected!");
+            setData(prev => ({ ...prev, trend: 'Connected! Waiting for data...' }));
+            client.subscribe("energy/data");
+          },
+          onFailure: (err) => {
+            console.error("❌ Failed:", err.errorMessage);
+            // ให้มันฟ้องบนหน้าจอเลยว่า Error อะไร
+            setData(prev => ({ ...prev, trend: `Error: ${err.errorMessage}` }));
+          }
+        });
+    } catch (e) {
+        setData(prev => ({ ...prev, trend: `Crash: ${e.message}` }));
+    }
 
-    return () => client.end();
+    return () => {
+      if (client.isConnected()) client.disconnect();
+    };
   }, []);
 
   return data;
