@@ -1,243 +1,141 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, Dimensions, SafeAreaView } from 'react-native';
-import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../../constants/config'; // Import NGROK URL
-import { LineChart } from 'react-native-chart-kit';
+import { StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useState, useCallback, useEffect } from 'react'; // ✅ ต้องมี useEffect ตรงนี้
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import PowerCard from '../../components/PowerCard';
+import useEnergyData from '../../hooks/useEnergyData';
 
-// --- Component การ์ดแสดงสถานะ (ปรับปรุงเล็กน้อย) ---
-// เพิ่ม props 'isFullWidth' และ 'color'
-const StatusCard = ({ label, value, unit, color = '#FFFFFF', isFullWidth = false }) => (
-  // ถ้า isFullWidth = true, ให้ใช้ style 'cardFull'
-  // ถ้าไม่ใช่, ให้ใช้ 'cardHalf'
-  <View style={[styles.cardBase, isFullWidth ? styles.cardFull : styles.cardHalf]}>
-    <Text style={styles.cardLabel}>{label}</Text>
-    <Text style={[styles.cardValue, { color: color }]}>
-      {value} <Text style={styles.cardUnit}>{unit}</Text>
-    </Text>
-  </View>
-);
+// ✅ เพิ่มส่วนประกอบของ Socket.IO
+import { io } from "socket.io-client";
+import { SOCKET_URL } from "../../constants/config";
 
-// --- Component กราฟ (เหมือนเดิม) ---
-const PowerChart = ({ data }) => {
-  // (โค้ดส่วน Chart เหมือนเดิม... ไม่มีการเปลี่ยนแปลง)
-  if (data.length === 0) {
-    return <Text style={styles.statusText}>Waiting for chart data...</Text>;
-  }
-  
-  const chartConfig = {
-    backgroundColor: '#374151',
-    backgroundGradientFrom: '#1F2937',
-    backgroundGradientTo: '#374151',
-    decimalPlaces: 1,
-    color: (opacity = 1) => `rgba(0, 255, 170, ${opacity})`, // #00FFAA
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    style: { borderRadius: 16 },
-    propsForDots: { r: '4', strokeWidth: '2', stroke: '#00FFAA' },
-  };
+export default function HomeScreen() {
+  const data = useEnergyData();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const chartData = {
-    labels: data.map(() => ''), 
-    datasets: [
-      {
-        data: data,
-        color: (opacity = 1) => `rgba(0, 255, 170, ${opacity})`, 
-        strokeWidth: 2,
-      },
-    ],
-    legend: ['Power (W)'],
-  };
-
-  return (
-    <View style={styles.chartContainer}>
-      <LineChart
-        data={chartData}
-        width={Dimensions.get('window').width - 32} 
-        height={220}
-        chartConfig={chartConfig}
-        bezier
-        style={{ marginVertical: 8, borderRadius: 16 }}
-      />
-    </View>
-  );
-};
-
-
-// --- หน้าจอหลัก (ปรับปรุงส่วน useEffect และ return) ---
-export default function DashboardScreen() {
-  const [status, setStatus] = useState('Connecting...');
-  const [trend, setTrend] = useState('N/A');
-  const [realtimeData, setRealtimeData] = useState({
-    voltage: 0,
-    current: 0,
-    power: 0,
-  });
-  const [powerHistory, setPowerHistory] = useState([]); 
-
+  // ✅ 1. ใส่ useEffect ไว้ข้างใน Component ตรงนี้ (ห้ามไว้นอกสุด)
   useEffect(() => {
-    // [REVISED] - เพิ่มการตรวจสอบ URL ก่อนเชื่อมต่อ
-    if (!SOCKET_URL || SOCKET_URL.includes("YOUR_NEW_NGROK_URL")) {
-      setStatus("❌ Invalid URL. Please update constants/config.js");
-      console.error("Invalid Socket URL in config.js");
-      return; // หยุดการทำงานถ้า URL ไม่ถูกต้อง
-    }
-
+    // เชื่อมต่อ Socket แบบ Polling (เพื่อแก้ปัญหา Python 3.14 Crash)
     const socket = io(SOCKET_URL, {
-      transports: ['websocket'], 
+      transports: ["polling"], // 👈 สำคัญมาก
     });
 
-    socket.on('connect', () => {
-      setStatus('✅ Connected');
-      console.log('Connected to server via Socket.IO');
-    });
-
-    socket.on('disconnect', () => {
-      setStatus('⚠️ Disconnected');
-      console.log('Disconnected from server');
-    });
-
-    socket.on('connect_error', (err) => {
-      setStatus('❌ Connection Error');
-      console.error('Socket.IO connection error:', err.message);
-    });
-
-    socket.on('update', (msg) => {
-      const { data, trend } = msg;
-      if (data) {
-        setRealtimeData(data);
-        setTrend(trend || 'N/A');
-
-        setPowerHistory(prevData => {
-          const newData = [...prevData, data.power || 0];
-          if (newData.length > 20) {
-            return newData.slice(newData.length - 20); 
-          }
-          return newData;
-        });
-      }
+    socket.on("connect", () => {
+      console.log("✅ Index Screen Connected to Server");
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []); // ทำงานครั้งเดียวเมื่อเปิดหน้า
+  }, []); // ทำงานแค่ครั้งเดียวตอนเปิดหน้า
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
 
   return (
-    // [REVISED] - ใช้ SafeAreaView คลุม ScrollView
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Energy Dashboard</Text>
-          <Text style={styles.statusText}>{status}</Text>
-        </View>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      {/* Header Section */}
+      <ThemedView style={styles.header}>
+        <ThemedText type="title" style={styles.greeting}>Hello, Engineer!</ThemedText>
+        <ThemedText style={styles.subtitle}>System Status: <ThemedText style={{color: '#4CAF50', fontWeight: 'bold'}}>Normal</ThemedText></ThemedText>
+      </ThemedView>
 
-        {/* [REVISED] - กล่องแสดงผลหลัก ใช้ cardContainer คลุมทั้งหมด */}
-        <View style={styles.cardContainer}>
-          <StatusCard
-            label="Voltage"
-            value={realtimeData.voltage.toFixed(2)}
-            unit="V"
-            color="#34D399" // Green
-          />
-          <StatusCard
-            label="Current"
-            value={realtimeData.current.toFixed(2)}
-            unit="A"
-            color="#FBBF24" // Yellow
-          />
-          <StatusCard
-            label="Power"
-            value={realtimeData.power.toFixed(2)}
-            unit="W"
-            color="#00FFAA" // Mint
-            isFullWidth={true} // กำหนดให้การ์ดนี้เต็มความกว้าง
-          />
-          <StatusCard
-            label="AI Trend"
-            value={trend}
-            unit=""
-            color="#60A5FA" // Blue
-            isFullWidth={true} // กำหนดให้การ์ดนี้เต็มความกว้าง
-          />
-        </View>
+      {/* Main Info Cards */}
+      <ThemedView style={styles.cardContainer}>
+        <PowerCard 
+          title="Voltage" 
+          value={`${data.voltage} V`} 
+          icon="bolt.fill" 
+          color="#FFD700" 
+        />
+        <PowerCard 
+          title="Current" 
+          value={`${data.current} A`} 
+          icon="waveform.path.ecg" 
+          color="#00BFFF" 
+        />
+        <PowerCard 
+          title="Power" 
+          value={`${data.power} W`} 
+          icon="power" 
+          color="#FF4500" 
+        />
+      </ThemedView>
 
-        {/* กราฟ */}
-        <PowerChart data={powerHistory} />
-        
-        {/* เพิ่มช่องว่างด้านล่าง */}
-        <View style={{ height: 40 }} /> 
-      </ScrollView>
-    </SafeAreaView>
+      {/* AI Prediction Section */}
+      <ThemedView style={styles.aiContainer}>
+        <ThemedView style={styles.aiHeader}>
+          <IconSymbol name="brain.head.profile" size={24} color="#A020F0" />
+          <ThemedText type="subtitle" style={styles.aiTitle}>AI Analysis</ThemedText>
+        </ThemedView>
+        <ThemedText style={styles.aiText}>
+          Trend: <ThemedText style={{fontWeight: 'bold'}}>{data.trend}</ThemedText>
+        </ThemedText>
+        <ThemedText style={styles.aiSubtext}>
+          Based on real-time consumption patterns.
+        </ThemedText>
+      </ThemedView>
+    </ScrollView>
   );
 }
 
-// --- Stylesheet (ปรับปรุง) ---
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#111827', // สีพื้นหลังสำหรับขอบบน (iPhone)
-  },
   container: {
-    flex: 1,
-    backgroundColor: '#111827',
-    paddingHorizontal: 16, // ย้าย padding มาไว้ที่นี่
+    padding: 20,
+    paddingTop: 60,
+    gap: 20,
   },
   header: {
-    paddingVertical: 16, // ปรับ padding
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  title: {
+  greeting: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
   },
-  statusText: {
-    fontSize: 14,
-    color: 'gray',
-    textAlign: 'center',
-    marginTop: 4,
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 5,
   },
-  // [NEW] - Container สำหรับ Card ทั้งหมด
   cardContainer: {
-    flexDirection: 'row', // จัดเรียงแนวนอน
-    flexWrap: 'wrap',     // ถ้าล้นให้ขึ้นบรรทัดใหม่
-    justifyContent: 'space-between', // จัดช่องไฟระหว่างการ์ด
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 15,
+    justifyContent: 'space-between',
   },
-  // [NEW] - Style พื้นฐานสำหรับ Card
-  cardBase: {
-    backgroundColor: '#1F2937', 
+  aiContainer: {
+    backgroundColor: '#f0f0f0', // Light Gray background
     padding: 20,
     borderRadius: 16,
-    marginBottom: 16,
-    shadowColor: '#000', // เพิ่มเงา
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginTop: 10,
   },
-  // [NEW] - Style สำหรับ Card ครึ่งจอ
-  cardHalf: {
-    width: '48%', // กว้าง 48% (เผื่อช่องไฟ)
-  },
-  // [NEW] - Style สำหรับ Card เต็มจอ
-  cardFull: {
-    width: '100%',
-  },
-  cardLabel: {
-    fontSize: 16,
-    color: '#D1D5DB', 
-    marginBottom: 8,
-  },
-  cardValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  cardUnit: {
-    fontSize: 18,
-    color: '#9CA3AF',
-  },
-  chartContainer: {
-    marginTop: 16,
+  aiHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-  }
+    gap: 10,
+    marginBottom: 10,
+    backgroundColor: 'transparent',
+  },
+  aiTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  aiText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  aiSubtext: {
+    fontSize: 12,
+    color: '#888',
+  },
 });

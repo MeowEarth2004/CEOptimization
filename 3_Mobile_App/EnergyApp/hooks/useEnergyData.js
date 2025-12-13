@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
-// ✅ แก้ไข 1: เปลี่ยนจาก SOCKET_ENDPOINT เป็น SOCKET_URL ให้ตรงกับ config.js
+// ✅ แก้ไข 1: เรียกใช้ SOCKET_URL ให้ตรงกับไฟล์ config
 import { SOCKET_URL } from "../constants/config";
 
 export default function useEnergyData() {
@@ -12,20 +12,24 @@ export default function useEnergyData() {
   });
 
   useEffect(() => {
-    console.log("🔌 Connecting to Socket:", SOCKET_URL); // log ดูว่า URL มาไหม
+    // ป้องกัน Error กรณี URL เป็น undefined
+    if (!SOCKET_URL) {
+      console.error("❌ SOCKET_URL is missing in config!");
+      return;
+    }
 
-    // ✅ แก้ไข 2: เพิ่ม options { transports: ["polling"] }
-    // เพื่อให้คุยกับ Server Python 3.14 ได้โดยไม่ Error
+    console.log("🔌 Hook Connecting to:", SOCKET_URL);
+
+    // ✅ แก้ไข 2: บังคับใช้ polling เท่านั้น (สำคัญมากสำหรับ Python 3.14)
     const socket = io(SOCKET_URL, {
-      transports: ["polling"], 
+      transports: ["polling"],
     });
 
     socket.on("connect", () => {
-      console.log("✅ App Connected to server ID:", socket.id);
+      console.log("✅ Hook Connected ID:", socket.id);
     });
 
     socket.on("update", (msg) => {
-      console.log("📱 App Received:", msg); // log ดูข้อมูล
       setData({
         voltage: msg.data?.voltage || 0,
         current: msg.data?.current || 0,
@@ -35,11 +39,7 @@ export default function useEnergyData() {
     });
 
     socket.on("disconnect", () => {
-      console.warn("⚠️ Disconnected from server");
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("❌ Socket Error:", err.message);
+      console.warn("⚠️ Hook Disconnected");
     });
 
     return () => socket.disconnect();
