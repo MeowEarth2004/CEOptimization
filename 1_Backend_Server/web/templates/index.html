@@ -2,59 +2,119 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>IoT Energy Dashboard</title>
+  <title>Energy Monitor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #121212; }
+    .card {
+      background-color: #1E1E1E;
+      border: 1px solid #333333;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    /* Neon Text Colors */
+    .text-accent { color: #00FFA3; }
+    .text-secondary { color: #00E0FF; }
+    .text-warning { color: #FFD300; }
+    .bg-accent-dim { background-color: rgba(0, 255, 163, 0.15); }
+    .bg-secondary-dim { background-color: rgba(0, 224, 255, 0.15); }
+    .bg-warning-dim { background-color: rgba(255, 211, 0, 0.15); }
+  </style>
 </head>
-<body class="bg-gray-900 text-white font-sans">
+<body class="text-white min-h-screen p-6">
 
-  <div class="tabs flex justify-around mb-4 bg-gray-800 py-3 shadow">
-    <button class="tab-button font-bold text-blue-400" onclick="showTab('dashboard')">Dashboard</button>
-    <button class="tab-button hover:text-blue-300" onclick="showTab('control')">Control</button>
-    <a href="/logout" class="text-red-400 font-bold hover:text-red-300">Logout</a>
-  </div>
+  <div class="max-w-md mx-auto">
+    
+    <div class="flex justify-between items-center mb-6 mt-2">
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-wide text-white">Energy Monitor</h1>
+        <p class="text-xs text-gray-400 mt-1">Real-time Control System</p>
+      </div>
+      <div class="flex items-center bg-white/10 px-3 py-1.5 rounded-full">
+        <div id="statusDot" class="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
+        <span id="statusText" class="text-xs font-semibold">Offline</span>
+      </div>
+    </div>
 
-  <div id="dashboard" class="tab-content container mx-auto p-6">
-      <h1 class="text-3xl font-bold text-center mb-6">🔋 IoT Energy Dashboard</h1>
+    <div class="grid grid-cols-2 gap-4 mb-4">
       
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="bg-gray-800 p-4 rounded text-center border border-gray-700">
-          <h2 class="text-gray-400">Voltage</h2>
-          <p id="voltage" class="text-3xl font-bold text-blue-400">-- V</p>
+      <div class="card rounded-3xl p-5 flex flex-col justify-between">
+        <div class="w-10 h-10 rounded-xl bg-secondary-dim flex items-center justify-center mb-3">
+          <svg class="w-5 h-5 text-secondary" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
         </div>
-        <div class="bg-gray-800 p-4 rounded text-center border border-gray-700">
-          <h2 class="text-gray-400">Current</h2>
-          <p id="current" class="text-3xl font-bold text-yellow-400">-- A</p>
-        </div>
-        <div class="bg-gray-800 p-4 rounded text-center border border-gray-700">
-          <h2 class="text-gray-400">Power</h2>
-          <p id="power" class="text-3xl font-bold text-green-400">-- W</p>
+        <div>
+          <p class="text-sm text-gray-400 font-medium mb-1">Voltage</p>
+          <p class="text-2xl font-bold text-secondary">
+            <span id="voltage">0.00</span> <span class="text-sm font-normal text-gray-400">V</span>
+          </p>
         </div>
       </div>
 
-      <div class="bg-gray-800 p-4 rounded mb-6 border border-gray-700">
-        <h2 class="text-gray-400">AI Analysis</h2>
-        <p id="trend" class="text-xl font-semibold">Waiting...</p>
+      <div class="card rounded-3xl p-5 flex flex-col justify-between">
+        <div class="w-10 h-10 rounded-xl bg-warning-dim flex items-center justify-center mb-3">
+          <svg class="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" transform="rotate(90 10 10)"/></svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-400 font-medium mb-1">Current</p>
+          <p class="text-2xl font-bold text-warning">
+            <span id="current">0.00</span> <span class="text-sm font-normal text-gray-400">A</span>
+          </p>
+        </div>
       </div>
 
-      <div class="bg-gray-800 p-4 rounded border border-gray-700">
-        <canvas id="powerChart" height="100"></canvas>
-      </div>
-  </div>
+    </div>
 
-  <div id="control" class="tab-content hidden container mx-auto p-6 text-center">
-      <h2 class="text-2xl font-bold mb-6">Control Panel</h2>
-      <div class="flex flex-col space-y-3 max-w-xs mx-auto">
-          <button onclick="sendCmd('use_grid')" class="bg-blue-600 p-3 rounded text-white">🏠 Use Grid</button>
-          <button onclick="sendCmd('use_battery')" class="bg-green-600 p-3 rounded text-white">🔋 Use Battery</button>
-          <button onclick="sendCmd('use_solar')" class="bg-yellow-600 p-3 rounded text-white">☀️ Use Solar</button>
+    <div class="card rounded-3xl p-5 mb-4 flex justify-between items-center">
+      <div>
+        <p class="text-sm text-gray-400 font-medium mb-1">Total Power</p>
+        <p class="text-4xl font-extrabold text-accent tracking-wide">
+          <span id="power">0.00</span> <span class="text-lg font-semibold text-gray-400">W</span>
+        </p>
       </div>
+      <div class="w-16 h-16 rounded-full bg-accent-dim flex items-center justify-center">
+        <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+      </div>
+    </div>
+
+    <div class="card rounded-2xl p-5 mb-5 border-l-4 border-l-[#A020F0]">
+      <div class="flex items-center gap-2 mb-2">
+        <svg class="w-5 h-5 text-[#A020F0]" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+        <span class="text-base font-bold text-white">AI Prediction</span>
+      </div>
+      <p id="trend" class="text-lg font-semibold text-white pl-7">Waiting...</p>
+    </div>
+
+    <div class="card rounded-3xl p-4">
+      <h3 class="text-base font-bold text-white mb-4 ml-1">Usage History</h3>
+      <div class="relative h-48 w-full">
+        <canvas id="powerChart"></canvas>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 mt-6">
+      <a href="/control/use_grid" onclick="alertCmd('Grid')" class="bg-blue-600/20 border border-blue-500 text-blue-400 py-3 rounded-xl text-center font-bold hover:bg-blue-600/40 transition">Grid</a>
+      <a href="/control/use_battery" onclick="alertCmd('Battery')" class="bg-green-600/20 border border-green-500 text-green-400 py-3 rounded-xl text-center font-bold hover:bg-green-600/40 transition">Battery</a>
+      <a href="/control/use_solar" onclick="alertCmd('Solar')" class="bg-yellow-600/20 border border-yellow-500 text-yellow-400 py-3 rounded-xl text-center font-bold hover:bg-yellow-600/40 transition">Solar</a>
+    </div>
+    
+    <div class="text-center mt-6">
+        <a href="/logout" class="text-red-400 text-sm font-bold hover:text-red-300">Log Out</a>
+    </div>
+
   </div>
 
   <script>
-    // --- 1. SETUP GRAPH ---
+    // --- CHART CONFIG ---
     const ctx = document.getElementById("powerChart").getContext("2d");
+    
+    // Gradient Background for Chart
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(0, 255, 163, 0.2)'); // Neon Green
+    gradient.addColorStop(1, 'rgba(0, 255, 163, 0)');
+
     const chart = new Chart(ctx, {
       type: "line",
       data: {
@@ -62,30 +122,53 @@
         datasets: [{
           label: "Power (W)",
           data: Array(20).fill(0),
-          borderColor: "#34D399",
-          backgroundColor: "rgba(52, 211, 153, 0.1)",
+          borderColor: "#00FFA3", // Neon Green line
+          backgroundColor: gradient,
+          borderWidth: 2,
+          pointRadius: 0, // ซ่อนจุดเพื่อให้กราฟดู Clean
           fill: true,
-          tension: 0.4
+          tension: 0.4 // Bezier curve
         }]
       },
-      options: { responsive: true, animation: false }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: {
+            grid: { color: '#333333' },
+            ticks: { color: '#AAAAAA' },
+            beginAtZero: true
+          }
+        },
+        animation: { duration: 0 }
+      }
     });
 
-    // --- 2. POLLING FUNCTION (หัวใจหลัก) ---
+    // --- DATA FETCHING (POLLING) ---
     async function fetchData() {
         try {
-            const res = await fetch('/api/data'); // ดึงข้อมูลจาก Python
+            const res = await fetch('/api/data');
             const data = await res.json();
 
-            // อัปเดตตัวเลข
-            document.getElementById("voltage").textContent = data.voltage.toFixed(2) + " V";
-            document.getElementById("current").textContent = data.current.toFixed(2) + " A";
-            document.getElementById("power").textContent = data.power.toFixed(2) + " W";
-            document.getElementById("trend").textContent = data.trend;
+            // Update Numbers
+            document.getElementById("voltage").textContent = data.voltage.toFixed(2);
+            document.getElementById("current").textContent = data.current.toFixed(2);
+            document.getElementById("power").textContent = data.power.toFixed(2);
+            
+            // Update AI Trend
+            const trendEl = document.getElementById("trend");
+            if(data.trend.includes("Increasing")) trendEl.textContent = "⚠️ " + data.trend;
+            else if(data.trend.includes("Decreasing")) trendEl.textContent = "✅ " + data.trend;
+            else trendEl.textContent = "📊 " + data.trend;
 
-            // อัปเดตกราฟ
-            const time = new Date().toLocaleTimeString();
-            chart.data.labels.push(time);
+            // Update Status Badge
+            document.getElementById("statusDot").className = "w-2 h-2 rounded-full bg-[#00FFA3] mr-2";
+            document.getElementById("statusText").textContent = "Online";
+
+            // Update Chart
+            chart.data.labels.push("");
             chart.data.datasets[0].data.push(data.power);
             if(chart.data.labels.length > 20) {
                 chart.data.labels.shift();
@@ -95,25 +178,18 @@
 
         } catch (err) {
             console.error("Fetch error:", err);
+            // Show Offline Status
+            document.getElementById("statusDot").className = "w-2 h-2 rounded-full bg-red-500 mr-2";
+            document.getElementById("statusText").textContent = "Offline";
         }
     }
 
-    // เรียก fetchData ทุกๆ 2 วินาที (2000 ms)
+    // เรียกข้อมูลทุก 2 วินาที
     setInterval(fetchData, 2000);
-    fetchData(); // เรียกครั้งแรกทันที
+    fetchData(); // เรียกครั้งแรก
 
-    // --- 3. CONTROL & TABS ---
-    function sendCmd(cmd) {
-        fetch('/control/' + cmd)
-            .then(r => r.json())
-            .then(d => alert("✅ " + d.status))
-            .catch(e => alert("❌ Error"));
-    }
-
-    function showTab(tabId) {
-        document.getElementById('dashboard').classList.add('hidden');
-        document.getElementById('control').classList.add('hidden');
-        document.getElementById(tabId).classList.remove('hidden');
+    function alertCmd(mode) {
+        alert("Switching to " + mode + " mode...");
     }
   </script>
 </body>
