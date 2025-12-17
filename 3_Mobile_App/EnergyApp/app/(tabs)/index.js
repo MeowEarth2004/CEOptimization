@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const COLORS = {
   bg: '#121212',           // พื้นหลังดำสนิท
   cardBg: '#1E1E1E',       // พื้นหลังการ์ด
-  accent: '#00FFA3',       // สีเขียวหลัก (Neon Green)
+  accent: '#00FFA3',       // สีเขียวหลัก
   secondary: '#00E0FF',    // สีฟ้านีออน
   warning: '#FFD300',      // สีเหลือง
   textMain: '#FFFFFF',     // ตัวหนังสือขาว
@@ -91,6 +91,7 @@ export default function DashboardScreen() {
 
         {/* --- MAIN STATS (GRID) --- */}
         <View style={styles.grid}>
+
           {/* Voltage */}
           <View style={styles.card}>
             <View style={styles.iconCircleBlue}>
@@ -113,7 +114,7 @@ export default function DashboardScreen() {
             </Text>
           </View>
 
-          {/* Power (Big Card) */}
+          {/* Power */}
           <View style={[styles.card, styles.fullWidthCard]}>
             <View style={styles.rowBetween}>
               <View>

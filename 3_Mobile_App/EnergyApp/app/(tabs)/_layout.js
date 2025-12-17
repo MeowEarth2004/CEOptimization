@@ -1,8 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons'; // หรือ FontAwesome
+import { Ionicons } from '@expo/vector-icons';
 
-// ฟังก์ชันสำหรับแสดงไอคอนบน Tab Bar
 function TabBarIcon({ name, color }) {
   return <Ionicons size={28} style={{ marginBottom: -3 }} name={name} color={color} />;
 }
@@ -11,16 +10,16 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#00FFAA', // สีแท็บที่เลือก
-        tabBarInactiveTintColor: 'gray', // สีแท็บที่ไม่ได้เลือก
+        tabBarActiveTintColor: '#00FFAA',
+        tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
-          backgroundColor: '#1F2937', // สีพื้นหลัง Tab Bar (เทาเข้ม)
+          backgroundColor: '#1F2937',
           borderTopWidth: 0,
         },
         headerStyle: {
-          backgroundColor: '#1F2937', // สีพื้นหลัง Header
+          backgroundColor: '#1F2937',
         },
-        headerTintColor: '#FFFFFF', // สีตัวอักษร Header
+        headerTintColor: '#FFFFFF', //
       }}>
       <Tabs.Screen
         name="index" // คือไฟล์ app/(tabs)/index.js

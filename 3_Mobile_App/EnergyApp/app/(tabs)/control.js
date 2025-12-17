@@ -1,11 +1,10 @@
 import { StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { CONTROL_URL } from '../../constants/config'; // เรียกใช้ URL จาก config กลาง
+import { CONTROL_URL } from '../../constants/config';
 
 export default function ControlScreen() {
 
-  // ฟังก์ชันส่งคำสั่ง
   const sendCommand = async (command, label) => {
     try {
       console.log(`Sending command: ${command}`);
@@ -60,21 +59,28 @@ export default function ControlScreen() {
   );
 }
 
+// Cards Styles
 const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingTop: 60,
     alignItems: 'center',
     gap: 20,
+    // ✅ 1. เปลี่ยนพื้นหลังเป็นสีดำ
+    backgroundColor: '#000000', 
+    flexGrow: 1, // สั่งให้ขยายเต็มจอ
   },
   header: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 5,
+    // ✅ 2. สีหัวข้อเป็นสีขาวนวล (อ่านสบายตากว่าขาวจ้า)
+    color: '#ECEDEE', 
   },
   subHeader: {
     fontSize: 16,
-    color: '#666',
+    // ✅ 3. สีคำอธิบายเป็นสีเทาสว่าง
+    color: '#9CA3AF', 
     marginBottom: 20,
   },
   button: {
@@ -85,15 +91,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 15,
-    elevation: 5, // เงา Android
-    shadowColor: '#000', // เงา iOS
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    elevation: 5,
+    // ✅ 4. ปรับเงาเล็กน้อยให้ปุ่มไม่จมหายไปในสีดำ (Optional)
+    shadowColor: '#FFF', 
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, 
+    shadowRadius: 4,
   },
-  gridBtn: { backgroundColor: '#4A90E2' },   // สีฟ้า
-  batBtn: { backgroundColor: '#50E3C2' },    // สีเขียวมิ้นท์
-  solarBtn: { backgroundColor: '#F5A623' },  // สีส้ม
+  // สีปุ่มคงเดิมตามที่ต้องการ
+  gridBtn: { backgroundColor: '#4A90E2' },
+  batBtn: { backgroundColor: '#50E3C2' },
+  solarBtn: { backgroundColor: '#F5A623' },
   btnText: {
     color: 'white',
     fontSize: 20,
