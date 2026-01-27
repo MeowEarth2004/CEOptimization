@@ -18,13 +18,13 @@ const char* topic_data = "energy/data";
 const char* topic_command = "energy/command";
 
 // ===== RELAY PINS =====
-const int RELAY_GRID    = 15;
-const int RELAY_BATTERY = 16;
-const int RELAY_SOLAR   = 17;
+const int RELAY_GRID    = 4;
+const int RELAY_BATTERY = 5;
+const int RELAY_SOLAR   = 6;
 
 // ===== SENSOR PINS =====
-const int VOLTAGE_PIN = 34;
-const int CURRENT_PIN = 35;
+const int VOLTAGE_PIN = 7;
+const int CURRENT_PIN = 15;
 
 // ===== MQTT CLIENT =====
 WiFiClientSecure espClient;
