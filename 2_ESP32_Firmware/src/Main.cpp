@@ -20,11 +20,11 @@ const char* topic_command = "energy/command";
 // ===== RELAY PINS =====
 const int RELAY_GRID    = 4;
 const int RELAY_BATTERY = 5;
-const int RELAY_SOLAR   = 6;
+const int RELAY_SOLAR   = 16;
 
 // ===== SENSOR PINS =====
 const int VOLTAGE_PIN = 7;
-const int CURRENT_PIN = 15;
+const int CURRENT_PIN = 6;
 
 // ===== MQTT CLIENT =====
 WiFiClientSecure espClient;
@@ -121,27 +121,25 @@ void loop() {
   client.loop();
 
   unsigned long now = millis();
-  if (now - lastMsg > 1000) { // ปรับให้ส่งไวขึ้นเป็นทุก 1 วินาที เพื่อดูค่าชัดๆ
+  if (now - lastMsg > 1000) {
     lastMsg = now;
 
     int rawV = analogRead(VOLTAGE_PIN);
-    int rawI = analogRead(CURRENT_PIN);
-
-    // ==========================================
-    // 👇 จุดที่แทรก: ปริ้นค่าดิบออกมาดู เพื่อหาค่า Zero
-    // ==========================================
-    Serial.print(">>> RAW ADC Current: ");
-    Serial.println(rawI); 
-    // ==========================================
-
-    // คำนวณ Voltage
     float voltage = (rawV / 4095.0) * 3.3 * 5.0;
 
-    // คำนวณ Current (ใช้สูตรชั่วคราวไปก่อน เดี๋ยวเราเอาค่า RAW มาแก้เลข 2000 นี้)
-    float current = (rawI - 2000) * 0.02; 
-    
+    long sumI = 0;
+    for (int i = 0; i < 50; i++) {
+      sumI += analogRead(CURRENT_PIN);
+      delay(2);
+    }
+    int avgRawI = sumI / 50;
 
-    // if (current < 0.05) current = 0; 
+    Serial.print(">>> RAW ADC Current (Avg): ");
+    Serial.println(avgRawI);
+
+    float current = (avgRawI - 2798) * 0.02; 
+
+    if (abs(current) < 0.40) current = 0;
 
     float power = voltage * current;
 
