@@ -124,20 +124,19 @@ void loop() {
   if (now - lastMsg > 3000) { // ส่งข้อมูลทุก 3 วินาที
     lastMsg = now;
 
-    // อ่านค่า Analog (0-4095)
     int rawV = analogRead(VOLTAGE_PIN);
     int rawI = analogRead(CURRENT_PIN);
 
-    float voltage = (rawV / 4095.0) * 3.3 * 5.0; // ตัวอย่างสูตร Voltage Divider
-    float current = (rawI - 2000) * 0.02;       // ตัวอย่างสูตร Hall Sensor (เช่น ACS712)
+    float voltage = (rawV / 4095.0) * 3.3 * 5.0;
+    float current = (rawI - 2000) * 0.02;
     
-    if (current < 0.05) current = 0; // ตัด Noise
+    if (current < 0.05) current = 0;
     float power = voltage * current;
 
     char msg[100];
     snprintf(msg, sizeof(msg), "{\"voltage\":%.2f,\"current\":%.2f,\"power\":%.2f}", voltage, current, power);
     
     client.publish(topic_data, msg);
-    Serial.printf("📡 Send -> V: %.2f V | I: %.2f A | P: %.2f W\n", voltage, current, power);
+    Serial.printf("📡 Send -> V: %.2f V | I: %.5f A | P: %.2f W\n", voltage, current, power);
   }
 }
