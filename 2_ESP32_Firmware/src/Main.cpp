@@ -121,22 +121,35 @@ void loop() {
   client.loop();
 
   unsigned long now = millis();
-  if (now - lastMsg > 3000) { // ส่งข้อมูลทุก 3 วินาที
+  if (now - lastMsg > 1000) { // ปรับให้ส่งไวขึ้นเป็นทุก 1 วินาที เพื่อดูค่าชัดๆ
     lastMsg = now;
 
     int rawV = analogRead(VOLTAGE_PIN);
     int rawI = analogRead(CURRENT_PIN);
 
+    // ==========================================
+    // 👇 จุดที่แทรก: ปริ้นค่าดิบออกมาดู เพื่อหาค่า Zero
+    // ==========================================
+    Serial.print(">>> RAW ADC Current: ");
+    Serial.println(rawI); 
+    // ==========================================
+
+    // คำนวณ Voltage
     float voltage = (rawV / 4095.0) * 3.3 * 5.0;
-    float current = (rawI - 2000) * 0.02;
+
+    // คำนวณ Current (ใช้สูตรชั่วคราวไปก่อน เดี๋ยวเราเอาค่า RAW มาแก้เลข 2000 นี้)
+    float current = (rawI - 2000) * 0.02; 
     
-    if (current < 0.05) current = 0;
+
+    // if (current < 0.05) current = 0; 
+
     float power = voltage * current;
 
     char msg[100];
     snprintf(msg, sizeof(msg), "{\"voltage\":%.2f,\"current\":%.2f,\"power\":%.2f}", voltage, current, power);
     
     client.publish(topic_data, msg);
-    Serial.printf("📡 Send -> V: %.2f V | I: %.5f A | P: %.2f W\n", voltage, current, power);
+    Serial.printf("📡 Send -> V: %.2f V | I: %.2f A | P: %.2f W\n", voltage, current, power);
+    Serial.println("--------------------------------");
   }
 }
