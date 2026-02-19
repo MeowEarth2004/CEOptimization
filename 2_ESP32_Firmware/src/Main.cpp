@@ -23,6 +23,9 @@ WiFiClientSecure espClient;
 PubSubClient client(espClient);
 unsigned long lastMsg = 0;
 
+// ตัวแปรเก็บค่า Offset อัตโนมัติ
+float zeroOffsetI = 3071.0; 
+
 void setup_wifi() {
   delay(10);
   Serial.println("\n[WiFi] Connecting...");
@@ -47,9 +50,27 @@ void reconnect() {
   }
 }
 
+// ฟังก์ชันหาค่า 0 Ampere อัตโนมัติตอนเปิดเครื่อง
+void calibrateCurrentSensor() {
+  Serial.println("Calibrating Current Sensor... (Please make sure NO LOAD is connected)");
+  long sumI = 0;
+  // อ่านค่า 100 ครั้งเพื่อหาค่าเฉลี่ยที่แม่นยำ
+  for (int i = 0; i < 100; i++) {
+    sumI += analogRead(CURRENT_PIN);
+    delay(10);
+  }
+  zeroOffsetI = sumI / 100.0;
+  Serial.print("✅ Calibration Done! New Zero Offset: ");
+  Serial.println(zeroOffsetI);
+}
+
 void setup() {
   Serial.begin(115200);
   analogReadResolution(12); 
+  
+  // เรียกใช้ฟังก์ชันคาลิเบรตก่อนทำอย่างอื่น (สำคัญ: ตอนเปิดเครื่องห้ามต่อโหลด)
+  calibrateCurrentSensor();
+
   setup_wifi();
   espClient.setInsecure(); 
   client.setServer(mqtt_server, mqtt_port);
@@ -78,16 +99,14 @@ void loop() {
       sumI += analogRead(CURRENT_PIN);
       delay(1);
     }
-    int avgRawI = sumI / 50;
+    float avgRawI = sumI / 50.0;
 
     Serial.print(">>> RAW ADC Current (Avg): ");
     Serial.println(avgRawI);
 
-    // 🔥🔥🔥 แก้ไขครั้งสุดท้าย: ใช้ค่าเฉลี่ยใหม่ 3071 🔥🔥🔥
-    float current = (avgRawI - 3071) * 0.026; 
+    float current = (avgRawI - zeroOffsetI) * 0.026; 
 
-    // 🔥 เพิ่มตัวตัด Noise เป็น 0.50 (ค่าต่ำกว่านี้ปัดเป็น 0 หมด)
-    if (abs(current) < 0.50) current = 0.0;
+    if (abs(current) < 0.35) current = 0.0;
 
     float power = voltage * current;
 
