@@ -34,11 +34,13 @@ export default function DashboardScreen() {
       const response = await fetch(`${SERVER_URL}/api/data`);
       const json = await response.json();
       
-      const newPower = json.power || 0;
+      // 🟢 แปลงค่า Power ให้เป็นบวกเสมอ
+      const newPower = Math.abs(json.power || 0);
 
       setData({
         voltage: json.voltage || 0,
-        current: json.current || 0,
+        // 🟢 แปลงค่า Current ให้เป็นบวกเสมอ
+        current: Math.abs(json.current || 0), 
         power: newPower,
         trend: json.trend || "N/A"
       });
