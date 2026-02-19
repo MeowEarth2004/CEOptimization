@@ -13,25 +13,16 @@ const int mqtt_port = 8883;
 const char* mqtt_user = "CEOptimization.admin2004";
 const char* mqtt_pass = "CEO.admin2004";
 
-// หัวข้อ MQTT
 const char* topic_data = "energy/data";
-const char* topic_command = "energy/command";
 
-// ===== RELAY PINS =====
-const int RELAY_GRID    = 4;
-const int RELAY_BATTERY = 5;
-const int RELAY_SOLAR   = 16;
+// ===== SENSOR PINS (ESP32-S3) =====
+const int VOLTAGE_PIN = 7; 
+const int CURRENT_PIN = 6; 
 
-// ===== SENSOR PINS =====
-const int VOLTAGE_PIN = 7;
-const int CURRENT_PIN = 6;
-
-// ===== MQTT CLIENT =====
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
 unsigned long lastMsg = 0;
 
-// ===== WIFI CONNECT =====
 void setup_wifi() {
   delay(10);
   Serial.println("\n[WiFi] Connecting...");
@@ -41,79 +32,29 @@ void setup_wifi() {
     Serial.print(".");
   }
   Serial.println("\n✅ WiFi connected!");
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
 }
 
-// ===== MQTT CALLBACK =====
-void callback(char* topic, byte* payload, unsigned int length) {
-  String cmd = "";
-  for (unsigned int i = 0; i < length; i++) {
-    cmd += (char)payload[i];
-  }
-  Serial.printf("📩 Received command: %s\n", cmd.c_str());
-
-  if (cmd == "use_grid") {
-    digitalWrite(RELAY_GRID, HIGH);
-    digitalWrite(RELAY_BATTERY, LOW);
-    digitalWrite(RELAY_SOLAR, LOW);
-    Serial.println("Switched to: GRID");
-  } 
-  else if (cmd == "use_battery") {
-    digitalWrite(RELAY_GRID, LOW);
-    digitalWrite(RELAY_BATTERY, HIGH);
-    digitalWrite(RELAY_SOLAR, LOW);
-    Serial.println("Switched to: BATTERY");
-  } 
-  else if (cmd == "use_solar") {
-    digitalWrite(RELAY_GRID, LOW);
-    digitalWrite(RELAY_BATTERY, LOW);
-    digitalWrite(RELAY_SOLAR, HIGH);
-    Serial.println("Switched to: SOLAR");
-  }
-}
-
-// ===== MQTT RECONNECT =====
 void reconnect() {
   while (!client.connected()) {
     Serial.print("[MQTT] Connecting...");
-    
-    String clientId = "ESP32Client-";
+    String clientId = "ESP32S3-";
     clientId += String(random(0xffff), HEX);
-
     if (client.connect(clientId.c_str(), mqtt_user, mqtt_pass)) { 
       Serial.println("✅ connected!");
-      client.subscribe(topic_command); 
     } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
       delay(5000);
     }
   }
 }
 
-// ===== SETUP =====
 void setup() {
   Serial.begin(115200);
-  
-  pinMode(RELAY_GRID, OUTPUT);
-  pinMode(RELAY_BATTERY, OUTPUT);
-  pinMode(RELAY_SOLAR, OUTPUT);
-  
-  digitalWrite(RELAY_GRID, HIGH);
-  digitalWrite(RELAY_BATTERY, LOW);
-  digitalWrite(RELAY_SOLAR, LOW);
-
+  analogReadResolution(12); 
   setup_wifi();
-  
   espClient.setInsecure(); 
-  
   client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(callback);
 }
 
-// ===== LOOP =====
 void loop() {
   if (!client.connected()) {
     reconnect();
@@ -121,25 +62,32 @@ void loop() {
   client.loop();
 
   unsigned long now = millis();
-  if (now - lastMsg > 1000) {
+  if (now - lastMsg > 1000) { 
     lastMsg = now;
 
+    // --- 1. อ่าน Voltage (Pin 7) ---
     int rawV = analogRead(VOLTAGE_PIN);
-    float voltage = (rawV / 4095.0) * 3.3 * 5.0;
+    float voltage = (rawV / 4095.0) * 3.3 * 5.0; 
+    
+    // ตัดค่า Volt ลอย
+    if (voltage < 5.0) voltage = 0.0;
 
+    // --- 2. อ่าน Current (Pin 6) ---
     long sumI = 0;
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 50; i++) { 
       sumI += analogRead(CURRENT_PIN);
-      delay(2);
+      delay(1);
     }
     int avgRawI = sumI / 50;
 
     Serial.print(">>> RAW ADC Current (Avg): ");
     Serial.println(avgRawI);
 
-    float current = (avgRawI - 2798) * 0.02; 
+    // 🔥🔥🔥 แก้ไขครั้งสุดท้าย: ใช้ค่าเฉลี่ยใหม่ 3071 🔥🔥🔥
+    float current = (avgRawI - 3071) * 0.026; 
 
-    if (abs(current) < 0.40) current = 0;
+    // 🔥 เพิ่มตัวตัด Noise เป็น 0.50 (ค่าต่ำกว่านี้ปัดเป็น 0 หมด)
+    if (abs(current) < 0.50) current = 0.0;
 
     float power = voltage * current;
 
