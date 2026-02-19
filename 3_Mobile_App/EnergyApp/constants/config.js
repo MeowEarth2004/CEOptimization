@@ -1,5 +1,5 @@
-//const API_URL = "https://unjaunty-ricarda-telephonically.ngrok-free.dev"
-const API_URL = "http://10.37.76.96:5500";
+//const API_URL = "https://unjaunty-ricarda-telephonically.ngrok-free.dev" เดิม
+const API_URL = "http://10.167.207.96:5500";
 //http://localhost:5500
 //const API_URL = "http://10.37.76.96:5500";
 // 🔴 ================== 🔴
